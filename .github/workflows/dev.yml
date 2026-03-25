@@ -1,4 +1,6 @@
-name: Build and Push Docker Image
+# CI/CD workflow voor de dev branch
+# Bouwt automatisch een Docker image en publiceert naar ghcr.io bij elke push op dev
+name: Build and Push Docker Image (dev)
 
 on:
   push:
