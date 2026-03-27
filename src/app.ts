@@ -17,6 +17,7 @@ app.use('/api', routes);
 
 const start = async () => {
   await connectRabbitMQ();
+  startHeartbeatProducer();
   app.listen(PORT, () => {
     console.log(`Planning service running on port ${PORT}`);
   });
