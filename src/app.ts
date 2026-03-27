@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import { connectRabbitMQ } from './rabbitmq';
+import { startHeartbeatProducer } from './producers';
 import routes from './routes';
 
 const app = express();
@@ -16,6 +17,7 @@ app.use('/api', routes);
 
 const start = async () => {
   await connectRabbitMQ();
+  startHeartbeatProducer();
   app.listen(PORT, () => {
     console.log(`Planning service running on port ${PORT}`);
   });
