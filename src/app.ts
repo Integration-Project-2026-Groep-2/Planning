@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import { connectRabbitMQ } from './rabbitmq';
+import { startHeartbeatProducer } from './producers';
 import routes from './routes';
 
 const app = express();
