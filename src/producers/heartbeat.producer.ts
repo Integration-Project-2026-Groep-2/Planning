@@ -1,7 +1,9 @@
 import { getChannel } from '../rabbitmq';
 
 export const startHeartbeatProducer = () => {
-  
+  setInterval(() => {
+    sendHeartbeat();
+  }, 1000);
 };
 
 const sendHeartbeat = async () => {
