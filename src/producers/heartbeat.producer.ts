@@ -20,6 +20,13 @@ const sendHeartbeat = async () => {
   <rabbitmqOk>true</rabbitmqOk>
   <outlookOk>true</outlookOk>
 </Heartbeat>`;
+
+    channel.sendToQueue(queueName, Buffer.from(heartbeatMessage), {
+      contentType: 'application/xml',
+      persistent: true,
+    });
+
+    console.log(`[Heartbeat] Bericht verzonden op ${timestamp}`);
     
   } catch (error) {
     console.error('[Heartbeat] Fout bij het verzenden:', error);
