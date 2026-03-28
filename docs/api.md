@@ -1,9 +1,6 @@
 # API Documentatie — Planning Service
 
 ## Sessions
-# API Documentatie — Planning Service
-
-## Sessions
 
 ### GET /api/sessions
 Geeft een lijst van alle sessies terug, gesorteerd op datum en starttijd.
@@ -215,7 +212,279 @@ Verzet een sessie naar een nieuw tijdstip. Slaat de wijziging op in de SessionCh
 ---
 
 ## Locations
-(Adam vult dit in)
+
+### GET /api/locations
+Geeft alle locaties terug, gesorteerd op roomName.
+
+**Request**
+- Geen body vereist
+
+**Response 200**
+```json
+[
+  {
+    "locationId": "550e8400-e29b-41d4-a716-446655440000",
+    "roomName": "Zaal A",
+    "address": "Straat 123",
+    "capacity": 50,
+    "status": "beschikbaar"
+  },
+  {
+    "locationId": "550e8400-e29b-41d4-a716-446655440001",
+    "roomName": "Zaal B",
+    "address": "Straat 124",
+    "capacity": 75,
+    "status": "gereserveerd"
+  }
+]
+```
+
+---
+
+### GET /api/locations/:id
+Geeft één locatie terug op basis van het locationId.
+
+**Request**
+- Geen body vereist
+
+**Response 200**
+```json
+{
+  "locationId": "550e8400-e29b-41d4-a716-446655440000",
+  "roomName": "Zaal A",
+  "address": "Straat 123",
+  "capacity": 50,
+  "status": "beschikbaar"
+}
+```
+
+**Response 404**
+```json
+{ "error": "Locatie niet gevonden" }
+```
+
+---
+
+### POST /api/locations
+Maakt een nieuwe locatie aan.
+
+**Verplichte velden:** `roomName`, `capacity`
+
+**Request Body**
+```json
+{
+  "roomName": "Zaal A",
+  "address": "Straat 123",
+  "capacity": 50,
+  "status": "beschikbaar"
+}
+```
+
+**Validatie**
+- `roomName`: verplicht, minimaal 1 karakter
+- `address`: optioneel
+- `capacity`: verplicht, groter dan 0
+- `status`: optioneel, moet een van: `beschikbaar`, `gereserveerd`, `niet beschikbaar`
+
+**Response 201**
+```json
+{
+  "locationId": "550e8400-e29b-41d4-a716-446655440000",
+  "roomName": "Zaal A",
+  "address": "Straat 123",
+  "capacity": 50,
+  "status": "beschikbaar"
+}
+```
+
+**Response 400** - Validatiefout
+```json
+{ "error": { "fieldErrors": { "capacity": ["Capaciteit moet groter zijn dan 0"] } } }
+```
+
+---
+
+### PUT /api/locations/:id
+Wijzigt een bestaande locatie. Alle velden zijn optioneel.
+
+**Request Body**
+```json
+{
+  "roomName": "Zaal B",
+  "capacity": 75,
+  "status": "gereserveerd"
+}
+```
+
+**Response 200**
+```json
+{
+  "locationId": "550e8400-e29b-41d4-a716-446655440000",
+  "roomName": "Zaal B",
+  "address": "Straat 123",
+  "capacity": 75,
+  "status": "gereserveerd"
+}
+```
+
+**Response 404**
+```json
+{ "error": "Locatie niet gevonden" }
+```
+
+**Response 400** - Validatiefout
+
+---
+
+### DELETE /api/locations/:id
+Verwijdert een locatie permanent.
+
+**Request**
+- Geen body vereist
+
+**Response 200**
+```json
+{
+  "message": "Locatie verwijderd",
+  "location": {
+    "locationId": "550e8400-e29b-41d4-a716-446655440000",
+    "roomName": "Zaal A",
+    "address": "Straat 123",
+    "capacity": 50,
+    "status": "beschikbaar"
+  }
+}
+```
+
+**Response 404**
+```json
+{ "error": "Locatie niet gevonden" }
+```
+
+---
 
 ## Speakers
-(Adam vult dit in)
+
+### GET /api/speakers
+Geeft alle sprekers terug, gesorteerd op achternaam en voornaam.
+
+**Request**
+- Geen body vereist
+
+**Response 200**
+```json
+[
+  {
+    "speakerId": "650e8400-e29b-41d4-a716-446655440000",
+    "crmMasterId": "CRM123",
+    "firstName": "Jan",
+    "lastName": "Jansen",
+    "email": "jan@example.com",
+    "phoneNumber": "+31612345678",
+    "company": "TechCorp",
+    "isActive": true
+  }
+]
+```
+
+---
+
+### GET /api/speakers/:id
+Geeft één spreker terug op basis van het speakerId.
+
+**Request**
+- Geen body vereist
+
+**Response 200**
+```json
+{
+  "speakerId": "650e8400-e29b-41d4-a716-446655440000",
+  "crmMasterId": "CRM123",
+  "firstName": "Jan",
+  "lastName": "Jansen",
+  "email": "jan@example.com",
+  "phoneNumber": "+31612345678",
+  "company": "TechCorp",
+  "isActive": true
+}
+```
+
+**Response 404**
+```json
+{ "error": "Spreker niet gevonden" }
+```
+
+---
+
+### PUT /api/speakers/:id
+Wijzigt een bestaande spreker. Alle velden zijn optioneel.
+
+**Request Body**
+```json
+{
+  "firstName": "Johannes",
+  "email": "jan.new@example.com",
+  "company": "NewCorp"
+}
+```
+
+**Validatie**
+- `firstName`: optioneel, minimaal 1 karakter
+- `lastName`: optioneel, minimaal 1 karakter
+- `email`: optioneel, moet een geldig e-mailadres zijn
+- `phoneNumber`: optioneel
+- `company`: optioneel
+
+**Response 200**
+```json
+{
+  "speakerId": "650e8400-e29b-41d4-a716-446655440000",
+  "crmMasterId": "CRM123",
+  "firstName": "Johannes",
+  "lastName": "Jansen",
+  "email": "jan.new@example.com",
+  "phoneNumber": "+31612345678",
+  "company": "NewCorp",
+  "isActive": true
+}
+```
+
+**Response 404**
+```json
+{ "error": "Spreker niet gevonden" }
+```
+
+**Response 400** - Validatiefout
+```json
+{ "error": { "fieldErrors": { "email": ["Ongeldig e-mailadres"] } } }
+```
+
+---
+
+### PATCH /api/speakers/:id/deactivate
+Deactiveert een spreker (zet isActive op false).
+
+**Request**
+- Geen body vereist
+
+**Response 200**
+```json
+{
+  "message": "Spreker gedeactiveerd",
+  "speaker": {
+    "speakerId": "650e8400-e29b-41d4-a716-446655440000",
+    "crmMasterId": "CRM123",
+    "firstName": "Jan",
+    "lastName": "Jansen",
+    "email": "jan@example.com",
+    "phoneNumber": "+31612345678",
+    "company": "TechCorp",
+    "isActive": false
+  }
+}
+```
+
+**Response 404**
+```json
+{ "error": "Spreker niet gevonden" }
+```
