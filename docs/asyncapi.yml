@@ -1,0 +1,857 @@
+asyncapi: 3.1.0
+
+info:
+  title: Planning Service
+  version: 1.5.0
+  description: |
+    AsyncAPI documentatie voor de Planning Service — Integratieproject 2026 Groep 2.
+    De Planning Service beheert sessies, locaties, sprekers en inschrijvingen voor events.
+    Communicatie verloopt via RabbitMQ met XML berichten gevalideerd tegen planning.schema.xsd.
+  contact:
+    name: Hana (Team Lead)
+
+defaultContentType: application/xml
+
+servers:
+  rabbitmq:
+    host: localhost:5672
+    protocol: amqp
+    description: RabbitMQ broker — lokaal via Docker
+    security:
+      - $ref: '#/components/securitySchemes/rabbitmqAuth'
+
+# ══════════════════════════════════════════════════════════════════════
+# CHANNELS — één channel per queue/exchange
+# ══════════════════════════════════════════════════════════════════════
+
+channels:
+
+  # ── PLANNING → CONTROL ROOM ─────────────────────────────────────────
+  planning.heartbeat:
+    address: planning.heartbeat
+    description: |
+      Heartbeat van de Planning Service — elke seconde verstuurd.
+      Control Room gebruikt dit om de status van de service te monitoren.
+    messages:
+      HeartbeatMessage:
+        $ref: '#/components/messages/Heartbeat'
+    bindings:
+      amqp:
+        is: routingKey
+        exchange:
+          name: planning.heartbeat
+          type: fanout
+          durable: false
+
+  planning.session.created:
+    address: planning.session.created
+    description: |
+      Verstuurd wanneer een nieuwe sessie aangemaakt wordt.
+      Frontend toont de sessie op de website, Control Room updatet het dashboard.
+    messages:
+      SessionCreatedMessage:
+        $ref: '#/components/messages/SessionCreated'
+    bindings:
+      amqp:
+        is: routingKey
+        exchange:
+          name: planning.session.created
+          type: fanout
+          durable: true
+
+  planning.session.updated:
+    address: planning.session.updated
+    description: |
+      Verstuurd wanneer een sessie gewijzigd wordt (titel, locatie, capaciteit).
+      CRM, Frontend en Mailing ontvangen dit event.
+      Naar CRM: root element is SessionUpdate (contract 11).
+      Naar Frontend/Mailing: root element is SessionUpdated (contracts 4, 8).
+    messages:
+      SessionUpdatedMessage:
+        $ref: '#/components/messages/SessionUpdated'
+      SessionUpdateCrmMessage:
+        $ref: '#/components/messages/SessionUpdate'
+    bindings:
+      amqp:
+        is: routingKey
+        exchange:
+          name: planning.session.updated
+          type: topic
+          durable: true
+
+  planning.session.cancelled:
+    address: planning.session.cancelled
+    description: |
+      Verstuurd wanneer een sessie geannuleerd wordt.
+      Frontend verbergt de sessie, Mailing stuurt annuleringsmail, Control Room updatet.
+    messages:
+      SessionCancelledMessage:
+        $ref: '#/components/messages/SessionCancelled'
+    bindings:
+      amqp:
+        is: routingKey
+        exchange:
+          name: planning.session.cancelled
+          type: fanout
+          durable: true
+
+  planning.session.rescheduled:
+    address: planning.session.rescheduled
+    description: |
+      Verstuurd wanneer een sessie verzet wordt naar een ander tijdslot.
+      Bevat altijd old én new tijdslot. SessionChangeLog wordt aangemaakt voor dit event.
+    messages:
+      SessionRescheduledMessage:
+        $ref: '#/components/messages/SessionRescheduled'
+    bindings:
+      amqp:
+        is: routingKey
+        exchange:
+          name: planning.session.rescheduled
+          type: fanout
+          durable: true
+
+  planning.session.full:
+    address: planning.session.full
+    description: |
+      Verstuurd wanneer een sessie volzet is.
+      Frontend toont 'volzet', Mailing plaatst deelnemer op wachtlijst.
+    messages:
+      SessionFullMessage:
+        $ref: '#/components/messages/SessionFull'
+    bindings:
+      amqp:
+        is: routingKey
+        exchange:
+          name: planning.session.full
+          type: fanout
+          durable: true
+
+  planning.session.error:
+    address: planning.session.error
+    description: |
+      Verstuurd bij elke fout in de Planning Service.
+      Control Room logt de fout en verwittigt admins.
+    messages:
+      SessionErrorMessage:
+        $ref: '#/components/messages/SessionError'
+    bindings:
+      amqp:
+        is: routingKey
+        exchange:
+          name: planning.session.error
+          type: fanout
+          durable: true
+
+  planning.participant.registered:
+    address: planning.participant.registered
+    description: |
+      Verstuurd wanneer een deelnemer zich inschrijft voor een sessie.
+      Control Room updatet statistieken.
+    messages:
+      ParticipantRegisteredMessage:
+        $ref: '#/components/messages/ParticipantRegistered'
+    bindings:
+      amqp:
+        is: routingKey
+        exchange:
+          name: planning.participant.registered
+          type: fanout
+          durable: true
+
+  # ── CRM → PLANNING ──────────────────────────────────────────────────
+  crm.user.confirmed:
+    address: crm.user.confirmed
+    description: |
+      Planning luistert op deze queue.
+      Als role=SPEAKER → opslaan in Speaker tabel.
+      Anders → opslaan als Participant referentie.
+    messages:
+      UserConfirmedMessage:
+        $ref: '#/components/messages/UserConfirmed'
+    bindings:
+      amqp:
+        is: routingKey
+        exchange:
+          name: contact.topic
+          type: topic
+          durable: true
+
+  crm.user.updated:
+    address: crm.user.updated
+    description: |
+      Planning luistert op deze queue.
+      Als role=SPEAKER → Speaker tabel bijwerken op basis van id (crmMasterID).
+    messages:
+      UserUpdatedMessage:
+        $ref: '#/components/messages/UserUpdated'
+    bindings:
+      amqp:
+        is: routingKey
+        exchange:
+          name: contact.topic
+          type: topic
+          durable: true
+
+  crm.user.deactivated:
+    address: crm.user.deactivated
+    description: |
+      Planning luistert op deze queue.
+      isActive op false zetten in Speaker tabel op basis van id.
+    messages:
+      UserDeactivatedMessage:
+        $ref: '#/components/messages/UserDeactivated'
+    bindings:
+      amqp:
+        is: routingKey
+        exchange:
+          name: contact.topic
+          type: topic
+          durable: true
+
+  crm.company.confirmed:
+    address: crm.company.confirmed
+    description: Planning luistert op deze queue — bedrijfsnaam opslaan als referentie.
+    messages:
+      CompanyConfirmedMessage:
+        $ref: '#/components/messages/CompanyConfirmed'
+    bindings:
+      amqp:
+        is: routingKey
+        exchange:
+          name: contact.topic
+          type: topic
+          durable: true
+
+  crm.company.updated:
+    address: crm.company.updated
+    description: Planning luistert op deze queue — bedrijfsdata bijwerken.
+    messages:
+      CompanyUpdatedMessage:
+        $ref: '#/components/messages/CompanyUpdated'
+    bindings:
+      amqp:
+        is: routingKey
+        exchange:
+          name: contact.topic
+          type: topic
+          durable: true
+
+  crm.company.deactivated:
+    address: crm.company.deactivated
+    description: |
+      Planning luistert op deze queue.
+      Bedrijf deactiveren, controleer of gekoppeld aan toekomstige sessies.
+    messages:
+      CompanyDeactivatedMessage:
+        $ref: '#/components/messages/CompanyDeactivated'
+    bindings:
+      amqp:
+        is: routingKey
+        exchange:
+          name: contact.topic
+          type: topic
+          durable: true
+
+# ══════════════════════════════════════════════════════════════════════
+# OPERATIONS — wie verstuurt, wie ontvangt
+# ══════════════════════════════════════════════════════════════════════
+
+operations:
+
+  # ── PLANNING verstuurt ───────────────────────────────────────────────
+  sendHeartbeat:
+    action: send
+    channel:
+      $ref: '#/channels/planning.heartbeat'
+    summary: Planning verstuurt elke seconde een heartbeat naar Control Room
+    bindings:
+      amqp:
+        deliveryMode: 1
+
+  sendSessionCreated:
+    action: send
+    channel:
+      $ref: '#/channels/planning.session.created'
+    summary: Planning verstuurt SessionCreated naar Frontend en Control Room
+
+  sendSessionUpdated:
+    action: send
+    channel:
+      $ref: '#/channels/planning.session.updated'
+    summary: Planning verstuurt SessionUpdated naar CRM, Frontend en Mailing
+
+  sendSessionCancelled:
+    action: send
+    channel:
+      $ref: '#/channels/planning.session.cancelled'
+    summary: Planning verstuurt SessionCancelled naar Frontend, Mailing en Control Room
+
+  sendSessionRescheduled:
+    action: send
+    channel:
+      $ref: '#/channels/planning.session.rescheduled'
+    summary: Planning verstuurt SessionRescheduled naar Frontend en Mailing
+
+  sendSessionFull:
+    action: send
+    channel:
+      $ref: '#/channels/planning.session.full'
+    summary: Planning verstuurt SessionFull naar Frontend en Mailing
+
+  sendSessionError:
+    action: send
+    channel:
+      $ref: '#/channels/planning.session.error'
+    summary: Planning verstuurt SessionError naar Control Room bij elke fout
+
+  sendParticipantRegistered:
+    action: send
+    channel:
+      $ref: '#/channels/planning.participant.registered'
+    summary: Planning verstuurt ParticipantRegistered naar Control Room
+
+  # ── PLANNING ontvangt ────────────────────────────────────────────────
+  receiveUserConfirmed:
+    action: receive
+    channel:
+      $ref: '#/channels/crm.user.confirmed'
+    summary: Planning ontvangt UserConfirmed van CRM — opslaan als Speaker of Participant
+
+  receiveUserUpdated:
+    action: receive
+    channel:
+      $ref: '#/channels/crm.user.updated'
+    summary: Planning ontvangt UserUpdated van CRM — Speaker tabel bijwerken
+
+  receiveUserDeactivated:
+    action: receive
+    channel:
+      $ref: '#/channels/crm.user.deactivated'
+    summary: Planning ontvangt UserDeactivated van CRM — isActive op false zetten
+
+  receiveCompanyConfirmed:
+    action: receive
+    channel:
+      $ref: '#/channels/crm.company.confirmed'
+    summary: Planning ontvangt CompanyConfirmed van CRM — bedrijf opslaan
+
+  receiveCompanyUpdated:
+    action: receive
+    channel:
+      $ref: '#/channels/crm.company.updated'
+    summary: Planning ontvangt CompanyUpdated van CRM — bedrijfsdata bijwerken
+
+  receiveCompanyDeactivated:
+    action: receive
+    channel:
+      $ref: '#/channels/crm.company.deactivated'
+    summary: Planning ontvangt CompanyDeactivated van CRM — bedrijf deactiveren
+
+# ══════════════════════════════════════════════════════════════════════
+# COMPONENTS
+# ══════════════════════════════════════════════════════════════════════
+
+components:
+
+  securitySchemes:
+    rabbitmqAuth:
+      type: userPassword
+      description: RabbitMQ guest/guest voor lokale development — vervangen bij productie
+
+  messages:
+
+    Heartbeat:
+      name: Heartbeat
+      title: Heartbeat
+      summary: Health check van de Planning Service — elke seconde
+      contentType: application/xml
+      payload:
+        $ref: '#/components/schemas/Heartbeat'
+
+    SessionCreated:
+      name: SessionCreated
+      title: SessionCreated
+      summary: Nieuwe sessie aangemaakt — contracts 3 en 12
+      contentType: application/xml
+      payload:
+        $ref: '#/components/schemas/SessionCreated'
+
+    SessionUpdated:
+      name: SessionUpdated
+      title: SessionUpdated
+      summary: Sessie gewijzigd naar Frontend en Mailing — contracts 4 en 8
+      contentType: application/xml
+      payload:
+        $ref: '#/components/schemas/SessionUpdated'
+
+    SessionUpdate:
+      name: SessionUpdate
+      title: SessionUpdate
+      summary: Sessie gewijzigd naar CRM — contract 11
+      contentType: application/xml
+      payload:
+        $ref: '#/components/schemas/SessionUpdate'
+
+    SessionCancelled:
+      name: SessionCancelled
+      title: SessionCancelled
+      summary: Sessie geannuleerd — contracts 5, 9 en 13
+      contentType: application/xml
+      payload:
+        $ref: '#/components/schemas/SessionCancelled'
+
+    SessionRescheduled:
+      name: SessionRescheduled
+      title: SessionRescheduled
+      summary: Sessie verzet naar ander tijdslot — contracts 6 en 10
+      contentType: application/xml
+      payload:
+        $ref: '#/components/schemas/SessionRescheduled'
+
+    SessionFull:
+      name: SessionFull
+      title: SessionFull
+      summary: Sessie is volzet — contracts 7 en 11
+      contentType: application/xml
+      payload:
+        $ref: '#/components/schemas/SessionFull'
+
+    SessionError:
+      name: SessionError
+      title: SessionError
+      summary: Fout in de Planning Service — contract 15
+      contentType: application/xml
+      payload:
+        $ref: '#/components/schemas/SessionError'
+
+    ParticipantRegistered:
+      name: ParticipantRegistered
+      title: ParticipantRegistered
+      summary: Deelnemer ingeschreven voor sessie — contract 14
+      contentType: application/xml
+      payload:
+        $ref: '#/components/schemas/ParticipantRegistered'
+
+    UserConfirmed:
+      name: UserConfirmed
+      title: UserConfirmed
+      summary: CRM bevestigt nieuwe user — contract 16
+      contentType: application/xml
+      payload:
+        $ref: '#/components/schemas/UserConfirmed'
+
+    UserUpdated:
+      name: UserUpdated
+      title: UserUpdated
+      summary: CRM updatet user — contract 17
+      contentType: application/xml
+      payload:
+        $ref: '#/components/schemas/UserUpdated'
+
+    UserDeactivated:
+      name: UserDeactivated
+      title: UserDeactivated
+      summary: CRM deactiveert user — contract 18
+      contentType: application/xml
+      payload:
+        $ref: '#/components/schemas/UserDeactivated'
+
+    CompanyConfirmed:
+      name: CompanyConfirmed
+      title: CompanyConfirmed
+      summary: CRM bevestigt nieuw bedrijf — contract 19
+      contentType: application/xml
+      payload:
+        $ref: '#/components/schemas/CompanyConfirmed'
+
+    CompanyUpdated:
+      name: CompanyUpdated
+      title: CompanyUpdated
+      summary: CRM updatet bedrijf — contract 20
+      contentType: application/xml
+      payload:
+        $ref: '#/components/schemas/CompanyUpdated'
+
+    CompanyDeactivated:
+      name: CompanyDeactivated
+      title: CompanyDeactivated
+      summary: CRM deactiveert bedrijf — contract 23
+      contentType: application/xml
+      payload:
+        $ref: '#/components/schemas/CompanyDeactivated'
+
+  schemas:
+
+    Heartbeat:
+      type: object
+      required: [serviceId, timestamp, status, dbOk, rabbitmqOk, outlookOk]
+      properties:
+        serviceId:
+          type: string
+          const: planning
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy, unknown]
+        dbOk:
+          type: boolean
+        rabbitmqOk:
+          type: boolean
+        outlookOk:
+          type: boolean
+
+    SessionCreated:
+      type: object
+      required: [sessionId, title, date, startTime, endTime, location, status, capacity, timestamp]
+      properties:
+        sessionId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        date:
+          type: string
+          format: date
+        startTime:
+          type: string
+          format: time
+        endTime:
+          type: string
+          format: time
+        location:
+          type: string
+        status:
+          type: string
+          enum: [active, cancelled, full, concept]
+        capacity:
+          type: integer
+          minimum: 1
+        timestamp:
+          type: string
+          format: date-time
+
+    SessionUpdated:
+      type: object
+      required: [sessionId, changeType, timestamp]
+      properties:
+        sessionId:
+          type: string
+          format: uuid
+        changeType:
+          type: string
+          enum: [TITLE_CHANGED, LOCATION_CHANGED, TIME_CHANGED, CAPACITY_CHANGED, SPEAKER_CHANGED]
+        newTime:
+          type: string
+          format: date-time
+        newLocation:
+          type: string
+        newTitle:
+          type: string
+        newCapacity:
+          type: integer
+          minimum: 1
+        ingeschrevenDeelnemers:
+          type: array
+          items:
+            type: string
+            format: uuid
+        timestamp:
+          type: string
+          format: date-time
+
+    SessionUpdate:
+      type: object
+      required: [sessionId, sessionName, changeType]
+      properties:
+        sessionId:
+          type: string
+        sessionName:
+          type: string
+        newTime:
+          type: string
+          format: date-time
+        newLocation:
+          type: string
+        changeType:
+          type: string
+          enum: [rescheduled, cancelled, updated]
+
+    SessionCancelled:
+      type: object
+      required: [sessionId, status, timestamp]
+      properties:
+        sessionId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          const: cancelled
+        reason:
+          type: string
+        ingeschrevenDeelnemers:
+          type: array
+          items:
+            type: string
+            format: uuid
+        timestamp:
+          type: string
+          format: date-time
+
+    SessionRescheduled:
+      type: object
+      required: [sessionId, oldDate, oldStartTime, oldEndTime, newDate, newStartTime, newEndTime, timestamp]
+      properties:
+        sessionId:
+          type: string
+          format: uuid
+        oldDate:
+          type: string
+          format: date
+        oldStartTime:
+          type: string
+          format: time
+        oldEndTime:
+          type: string
+          format: time
+        newDate:
+          type: string
+          format: date
+        newStartTime:
+          type: string
+          format: time
+        newEndTime:
+          type: string
+          format: time
+        newLocation:
+          type: string
+        reason:
+          type: string
+        ingeschrevenDeelnemers:
+          type: array
+          items:
+            type: string
+            format: uuid
+        timestamp:
+          type: string
+          format: date-time
+
+    SessionFull:
+      type: object
+      required: [sessionId, currentRegistrations, capacity, timestamp]
+      properties:
+        sessionId:
+          type: string
+          format: uuid
+        currentRegistrations:
+          type: integer
+          minimum: 0
+        capacity:
+          type: integer
+          minimum: 1
+        crmMasterId:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+
+    SessionError:
+      type: object
+      required: [errorType, message, service, timestamp]
+      properties:
+        errorType:
+          type: string
+          enum: [VALIDATION_ERROR, OUTLOOK_SYNC_FAILED, DATABASE_ERROR, RABBITMQ_ERROR, CONFLICT_ERROR, NOT_FOUND, IDEMPOTENCY_VIOLATION, UNKNOWN_ERROR]
+        message:
+          type: string
+        sessionId:
+          type: string
+          format: uuid
+        service:
+          type: string
+          const: planning
+        timestamp:
+          type: string
+          format: date-time
+
+    ParticipantRegistered:
+      type: object
+      required: [sessionId, crmMasterId, currentRegistrations, capacity, registrationTime, timestamp]
+      properties:
+        sessionId:
+          type: string
+          format: uuid
+        crmMasterId:
+          type: string
+          format: uuid
+        currentRegistrations:
+          type: integer
+          minimum: 0
+        capacity:
+          type: integer
+          minimum: 1
+        registrationTime:
+          type: string
+          format: date-time
+        timestamp:
+          type: string
+          format: date-time
+
+    UserConfirmed:
+      type: object
+      required: [id, email, firstName, lastName, role, isActive, gdprConsent, confirmedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phone:
+          type: string
+        role:
+          type: string
+          enum: [VISITOR, COMPANY_CONTACT, SPEAKER, EVENT_MANAGER, CASHIER, BAR_STAFF, ADMIN]
+        companyId:
+          type: string
+          format: uuid
+        badgeCode:
+          type: string
+        isActive:
+          type: boolean
+        gdprConsent:
+          type: boolean
+        confirmedAt:
+          type: string
+          format: date-time
+
+    UserUpdated:
+      type: object
+      required: [id, email, firstName, lastName, role, isActive, gdprConsent, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phone:
+          type: string
+        role:
+          type: string
+          enum: [VISITOR, COMPANY_CONTACT, SPEAKER, EVENT_MANAGER, CASHIER, BAR_STAFF, ADMIN]
+        companyId:
+          type: string
+          format: uuid
+        badgeCode:
+          type: string
+        street:
+          type: string
+        houseNumber:
+          type: string
+        postalCode:
+          type: string
+        city:
+          type: string
+        country:
+          type: string
+        isActive:
+          type: boolean
+        gdprConsent:
+          type: boolean
+        updatedAt:
+          type: string
+          format: date-time
+
+    UserDeactivated:
+      type: object
+      required: [id, email, deactivatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        deactivatedAt:
+          type: string
+          format: date-time
+
+    CompanyConfirmed:
+      type: object
+      required: [id, vatNumber, name, email, isActive, confirmedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        vatNumber:
+          type: string
+          pattern: '^BE[0-9]{10}$'
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        isActive:
+          type: boolean
+        confirmedAt:
+          type: string
+          format: date-time
+
+    CompanyUpdated:
+      type: object
+      required: [id, vatNumber, name, isActive, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        vatNumber:
+          type: string
+          pattern: '^BE[0-9]{10}$'
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        street:
+          type: string
+        houseNumber:
+          type: string
+        postalCode:
+          type: string
+        city:
+          type: string
+        country:
+          type: string
+        isActive:
+          type: boolean
+        updatedAt:
+          type: string
+          format: date-time
+
+    CompanyDeactivated:
+      type: object
+      required: [id, vatNumber, deactivatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        vatNumber:
+          type: string
+          pattern: '^BE[0-9]{10}$'
+        deactivatedAt:
+          type: string
+          format: date-time
