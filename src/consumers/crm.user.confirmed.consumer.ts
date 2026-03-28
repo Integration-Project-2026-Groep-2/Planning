@@ -1,20 +1,34 @@
 import { getChannel } from '../rabbitmq';
 import { parseStringPromise } from 'xml2js';
 import { query } from '../db';
+import { validateXml } from '../utils/xml.validator';
 
 export const startUserConfirmedConsumer = async () => {
   const channel = getChannel();
   const queue = 'crm.user.confirmed';
+  const dlq = 'crm.user.confirmed.dlq';
 
   await channel.assertQueue(queue, { durable: true });
+  await channel.assertQueue(dlq, { durable: true });
 
   channel.consume(queue, async (msg) => {
     if (!msg) return;
 
     try {
       const xml = msg.content.toString();
-      const data = await parseStringPromise(xml);
 
+      const isValid = validateXml(xml, 'UserConfirmed');
+      if (!isValid) {
+        console.error('[CRM] Ongeldige XML in crm.user.confirmed');
+        channel.sendToQueue(dlq, Buffer.from(xml), {
+          contentType: 'application/xml',
+          persistent: true,
+        });
+        channel.ack(msg);
+        return;
+      }
+
+      const data = await parseStringPromise(xml);
       const user = data.UserConfirmed;
 
       if (user.role?.[0] !== 'SPEAKER') {

@@ -1,5 +1,16 @@
 import { query } from '../db';
-import { CreateSessionDTO, UpdateSessionDTO, RescheduleSessionDTO } from '../models/session.model';
+import {
+  CreateSessionDTO,
+  UpdateSessionDTO,
+  RescheduleSessionDTO,
+} from '../models/session.model';
+import {
+  sendSessionCreated,
+  sendSessionCancelled,
+  sendSessionRescheduled,
+  sendSessionUpdateToCrm,
+} from '../producers';
+import { getLocationById } from './location.service';
 
 // ── Hulpfunctie: controleer of locatie al bezet is op dat tijdslot ──
 const checkLocationConflict = async (
@@ -19,6 +30,7 @@ const checkLocationConflict = async (
        AND ($5::uuid IS NULL OR "sessionId" != $5)`,
     [locationId, date, startTime, endTime, excludeSessionId || null]
   );
+
   return result.rows.length > 0;
 };
 
@@ -49,6 +61,7 @@ export const createSession = async (data: CreateSessionDTO) => {
       data.startTime,
       data.endTime
     );
+
     if (conflict) {
       throw new Error('LOCATION_CONFLICT');
     }
@@ -70,11 +83,28 @@ export const createSession = async (data: CreateSessionDTO) => {
       data.capacity,
     ]
   );
-  return result.rows[0];
+
+  const createdSession = result.rows[0];
+
+  await sendSessionCreated({
+    sessionId: createdSession.sessionId,
+    title: createdSession.title,
+    date: createdSession.date,
+    startTime: createdSession.startTime,
+    endTime: createdSession.endTime,
+    locationId: createdSession.locationId,
+    capacity: createdSession.capacity,
+    status: createdSession.status,
+  });
+
+  return createdSession;
 };
 
 // ── Sessie wijzigen ──
-export const updateSession = async (sessionId: string, data: UpdateSessionDTO) => {
+export const updateSession = async (
+  sessionId: string,
+  data: UpdateSessionDTO
+) => {
   // Conflictdetectie bij locatiewijziging
   if (data.locationId && data.date && data.startTime && data.endTime) {
     const conflict = await checkLocationConflict(
@@ -84,6 +114,7 @@ export const updateSession = async (sessionId: string, data: UpdateSessionDTO) =
       data.endTime,
       sessionId
     );
+
     if (conflict) {
       throw new Error('LOCATION_CONFLICT');
     }
@@ -113,7 +144,27 @@ export const updateSession = async (sessionId: string, data: UpdateSessionDTO) =
       sessionId,
     ]
   );
-  return result.rows[0] || null;
+
+  const updatedSession = result.rows[0] || null;
+
+  if (updatedSession) {
+    let newLocation = 'Onbekend';
+
+    if (updatedSession.locationId) {
+      const location = await getLocationById(updatedSession.locationId);
+      newLocation = location?.roomName || 'Onbekend';
+    }
+
+    await sendSessionUpdateToCrm({
+      sessionId: updatedSession.sessionId,
+      sessionName: updatedSession.title,
+      newTime: `${updatedSession.date} ${updatedSession.startTime} - ${updatedSession.endTime}`,
+      newLocation,
+      changeType: 'updated',
+    });
+  }
+
+  return updatedSession;
 };
 
 // ── Sessie annuleren ──
@@ -125,7 +176,36 @@ export const cancelSession = async (sessionId: string) => {
      RETURNING *`,
     [sessionId]
   );
-  return result.rows[0] || null;
+
+  const cancelledSession = result.rows[0] || null;
+
+  if (cancelledSession) {
+    await sendSessionCancelled({
+      sessionId: cancelledSession.sessionId,
+      title: cancelledSession.title,
+      date: cancelledSession.date,
+      startTime: cancelledSession.startTime,
+      endTime: cancelledSession.endTime,
+      reason: 'Session cancelled',
+    });
+
+    let newLocation = 'Onbekend';
+
+    if (cancelledSession.locationId) {
+      const location = await getLocationById(cancelledSession.locationId);
+      newLocation = location?.roomName || 'Onbekend';
+    }
+
+    await sendSessionUpdateToCrm({
+      sessionId: cancelledSession.sessionId,
+      sessionName: cancelledSession.title,
+      newTime: `${cancelledSession.date} ${cancelledSession.startTime} - ${cancelledSession.endTime}`,
+      newLocation,
+      changeType: 'cancelled',
+    });
+  }
+
+  return cancelledSession;
 };
 
 // ── Sessie verzetten (reschedule) ──
@@ -133,7 +213,7 @@ export const rescheduleSession = async (
   sessionId: string,
   data: RescheduleSessionDTO
 ) => {
-  // Huidige sessie ophalen voor de auditlog
+  // Huidige sessie ophalen voor auditlog en producer
   const current = await getSessionById(sessionId);
   if (!current) return null;
 
@@ -146,6 +226,7 @@ export const rescheduleSession = async (
       data.endTime,
       sessionId
     );
+
     if (conflict) {
       throw new Error('LOCATION_CONFLICT');
     }
@@ -162,6 +243,12 @@ export const rescheduleSession = async (
     [data.date, data.startTime, data.endTime, sessionId]
   );
 
+  // Datum proper formatteren voor auditlog / XML
+  const currentDate =
+    current.date instanceof Date
+      ? current.date.toISOString().split('T')[0]
+      : String(current.date).split('T')[0];
+
   // Wijziging opslaan in auditlog
   await query(
     `INSERT INTO "SessionChangeLog"
@@ -169,15 +256,44 @@ export const rescheduleSession = async (
      VALUES ($1, $2, $3, $4, $5, $6)`,
     [
       sessionId,
-      `${current.date}T${current.startTime}`,
-      `${data.date}T${data.startTime}`,
-      `${current.date}T${current.endTime}`,
-      `${data.date}T${data.endTime}`,
+      `${currentDate} ${current.startTime}`,
+      `${data.date} ${data.startTime}`,
+      `${currentDate} ${current.endTime}`,
+      `${data.date} ${data.endTime}`,
       data.reason,
     ]
   );
 
-  return updated.rows[0];
+  const rescheduledSession = updated.rows[0];
+
+  await sendSessionRescheduled({
+    sessionId,
+    title: current.title,
+    oldDate: currentDate,
+    oldStartTime: current.startTime,
+    oldEndTime: current.endTime,
+    newDate: data.date,
+    newStartTime: data.startTime,
+    newEndTime: data.endTime,
+    reason: data.reason,
+  });
+
+  let newLocation = 'Onbekend';
+
+  if (current.locationId) {
+    const location = await getLocationById(current.locationId);
+    newLocation = location?.roomName || 'Onbekend';
+  }
+
+  await sendSessionUpdateToCrm({
+    sessionId,
+    sessionName: current.title,
+    newTime: `${data.date} ${data.startTime} - ${data.endTime}`,
+    newLocation,
+    changeType: 'rescheduled',
+  });
+
+  return rescheduledSession;
 };
 
 // ── Sessie verwijderen ──
