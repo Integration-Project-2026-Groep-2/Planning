@@ -416,36 +416,3 @@
     </xs:complexType>
   </xs:element>
 
-  <!-- ══════════════════════════════════════════════════════════════════
-       MAILING → PLANNING
-       Contract 21 — mailing.delivery.confirmed → Planning  (pending)
-  ══════════════════════════════════════════════════════════════════ -->
-
-  <xs:element name="DeliveryConfirmed">
-    <xs:complexType>
-      <xs:sequence>
-        <xs:element name="sessionId"   type="UUIDType"/>
-        <xs:element name="crmMasterId" type="UUIDType"/>
-        <xs:element name="status"      type="xs:string"/>
-        <xs:element name="deliveredAt" type="ISO8601DateTimeType"/>
-      </xs:sequence>
-    </xs:complexType>
-  </xs:element>
-
-  <!-- ══════════════════════════════════════════════════════════════════
-       MAILING → PLANNING
-       Contract 22 — mailing.delivery.failed → Planning  (pending)
-  ══════════════════════════════════════════════════════════════════ -->
-
-  <xs:element name="DeliveryFailed">
-    <xs:complexType>
-      <xs:sequence>
-        <xs:element name="sessionId"    type="UUIDType"/>
-        <xs:element name="crmMasterId"  type="UUIDType"/>
-        <xs:element name="errorReason"  type="xs:string"/>
-        <xs:element name="attemptCount" type="xs:positiveInteger"/>
-      </xs:sequence>
-    </xs:complexType>
-  </xs:element>
-
-</xs:schema>
