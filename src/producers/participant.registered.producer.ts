@@ -4,7 +4,11 @@ import { validateXml } from '../utils/xml.validator';
 
 type ParticipantRegisteredPayload = {
   sessionId: string;
-  participantId: string;
+  crmMasterId: string;
+  currentRegistrations: number;
+  capacity: number;
+  registrationTime?: string;
+  timestamp?: string;
 };
 
 export const sendParticipantRegistered = async (
@@ -12,13 +16,17 @@ export const sendParticipantRegistered = async (
 ) => {
   try {
     const channel = getChannel();
-    const queueName = 'planning.participant.registered';
+    const exchangeName = 'planning.participant.registered';
 
-    await channel.assertQueue(queueName, { durable: true });
+    await channel.assertExchange(exchangeName, 'fanout', { durable: true });
 
     const xml = buildXml('ParticipantRegistered', {
       sessionId: payload.sessionId,
-      participantId: payload.participantId,
+      crmMasterId: payload.crmMasterId,
+      currentRegistrations: payload.currentRegistrations,
+      capacity: payload.capacity,
+      registrationTime: payload.registrationTime ?? new Date().toISOString(),
+      timestamp: payload.timestamp ?? new Date().toISOString(),
     });
 
     const isValid = validateXml(xml, 'ParticipantRegistered');
@@ -27,7 +35,7 @@ export const sendParticipantRegistered = async (
       return;
     }
 
-    channel.sendToQueue(queueName, Buffer.from(xml), {
+    channel.publish(exchangeName, '', Buffer.from(xml), {
       contentType: 'application/xml',
       persistent: true,
     });
