@@ -24,13 +24,15 @@ app.get('/health', (req, res) => {
 app.use('/api', routes);
 
 const start = async () => {
-  await connectRabbitMQ();
-
-  startHeartbeatProducer();
-
-  await startUserConfirmedConsumer();
-  await startUserUpdatedConsumer();
-  await startUserDeactivatedConsumer();
+  try {
+    await connectRabbitMQ();
+    startHeartbeatProducer();
+    await startUserConfirmedConsumer();
+    await startUserUpdatedConsumer();
+    await startUserDeactivatedConsumer();
+  } catch (err) {
+    console.warn('RabbitMQ niet bereikbaar — service start zonder RabbitMQ');
+  }
 
   await startCompanyConfirmedConsumer();
   await startCompanyUpdatedConsumer();
