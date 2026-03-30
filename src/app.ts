@@ -27,16 +27,17 @@ const start = async () => {
   try {
     await connectRabbitMQ();
     startHeartbeatProducer();
+
     await startUserConfirmedConsumer();
     await startUserUpdatedConsumer();
     await startUserDeactivatedConsumer();
+
+    await startCompanyConfirmedConsumer();
+    await startCompanyUpdatedConsumer();
+    await startCompanyDeactivatedConsumer();
   } catch (err) {
     console.warn('RabbitMQ niet bereikbaar — service start zonder RabbitMQ');
   }
-
-  await startCompanyConfirmedConsumer();
-  await startCompanyUpdatedConsumer();
-  await startCompanyDeactivatedConsumer();
 
   app.listen(PORT, () => {
     console.log(`Planning service running on port ${PORT}`);

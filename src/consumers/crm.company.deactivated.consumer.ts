@@ -1,49 +1,40 @@
 import { getChannel } from '../rabbitmq';
-import { parseStringPromise } from 'xml2js';
 import { z } from 'zod';
 import { query } from '../db';
-import { validateXml } from '../utils/xml.validator';
+import { parseXml } from '../utils/xml.parser';
 
-const CompanyDeactivatedSchema = z.object({
-  companyName: z.string().min(1),
+const schema = z.object({
+  id: z.string().uuid(),
+  vatNumber: z.string().regex(/^BE[0-9]{10}$/),
+  deactivatedAt: z.string(),
 });
 
 export const startCompanyDeactivatedConsumer = async () => {
   const channel = getChannel();
+
+  const exchange = 'contact.topic';
   const queue = 'crm.company.deactivated';
   const dlq = 'crm.company.deactivated.dlq';
 
+  await channel.assertExchange(exchange, 'topic', { durable: true });
   await channel.assertQueue(queue, { durable: true });
   await channel.assertQueue(dlq, { durable: true });
+
+  await channel.bindQueue(queue, exchange, 'crm.company.deactivated');
 
   channel.consume(queue, async (msg) => {
     if (!msg) return;
 
     try {
       const xml = msg.content.toString();
+      const data = await parseXml(xml, 'CompanyDeactivated');
 
-      if (!validateXml(xml, 'CompanyDeactivated')) {
-        console.error('[CRM] Ongeldige XML in crm.company.deactivated');
-        channel.sendToQueue(dlq, Buffer.from(xml), {
-          contentType: 'application/xml',
-          persistent: true,
-        });
-        channel.ack(msg);
-        return;
-      }
+      const parsed = schema.safeParse(data);
 
-      const parsed = await parseStringPromise(xml);
-      const data = parsed.CompanyDeactivated;
-
-      const payload = {
-        companyName: data.companyName?.[0] ?? data.name?.[0].trim(),
-      };
-
-      const validated = CompanyDeactivatedSchema.safeParse(payload);
-      if (!validated.success) {
+      if (!parsed.success) {
         console.error(
           '[CRM] Zod validatie mislukt in crm.company.deactivated:',
-          validated.error.flatten()
+          parsed.error.flatten()
         );
         channel.sendToQueue(dlq, Buffer.from(xml), {
           contentType: 'application/xml',
@@ -53,38 +44,58 @@ export const startCompanyDeactivatedConsumer = async () => {
         return;
       }
 
-      const futureSessions = await query(
-        `SELECT s."sessionId", s."title", s."date", s."startTime"
-         FROM "Speaker" sp
-         INNER JOIN "SessionSpeaker" ss ON sp."speakerId" = ss."speakerId"
-         INNER JOIN "Session" s ON ss."sessionId" = s."sessionId"
-         WHERE sp."company" = $1
-           AND sp."isActive" = true
-           AND s."status" != 'geannuleerd'
-           AND s."date" >= CURRENT_DATE
-         ORDER BY s."date", s."startTime"`,
-        [validated.data.companyName]
+      const company = parsed.data;
+
+      const speakerResult = await query(
+        `SELECT "company"
+         FROM "Speaker"
+         WHERE "crmMasterId" = $1
+         LIMIT 1`,
+        [company.id]
       );
 
-      if (futureSessions.rows.length > 0) {
-        console.warn(
-          '[CRM] Company gedeactiveerd maar nog gekoppeld aan toekomstige sessies:',
-          futureSessions.rows
+      const companyName = speakerResult.rows[0]?.company;
+
+      if (companyName) {
+        const futureSessions = await query(
+          `SELECT s."sessionId", s."title", s."date", s."startTime"
+           FROM "Speaker" sp
+           INNER JOIN "SessionSpeaker" ss ON sp."speakerId" = ss."speakerId"
+           INNER JOIN "Session" s ON ss."sessionId" = s."sessionId"
+           WHERE sp."company" = $1
+             AND s."status" != 'geannuleerd'
+             AND s."date" >= CURRENT_DATE`,
+          [companyName]
+        );
+
+        if (futureSessions.rows.length > 0) {
+          console.warn(
+            '[CRM] Company gedeactiveerd maar nog gekoppeld aan toekomstige sessies:',
+            futureSessions.rows
+          );
+        }
+
+        await query(
+          `UPDATE "Speaker"
+           SET "isActive" = false
+           WHERE "company" = $1`,
+          [companyName]
+        );
+      } else {
+        await query(
+          `UPDATE "Speaker"
+           SET "isActive" = false
+           WHERE "crmMasterId" = $1`,
+          [company.id]
         );
       }
 
-      await query(
-        `UPDATE "Speaker"
-         SET "isActive" = false
-         WHERE "company" = $1`,
-        [validated.data.companyName]
+      console.log(
+        '[CRM] Company gedeactiveerd → gekoppelde speakers uitgeschakeld'
       );
-
-      console.warn('[CRM] Company gedeactiveerd → gekoppelde speakers uitgeschakeld');
-
       channel.ack(msg);
-    } catch (error) {
-      console.error('[CRM] Error company deactivated:', error);
+    } catch (err) {
+      console.error('[CRM] Fout in crm.company.deactivated:', err);
       channel.nack(msg, false, false);
     }
   });

@@ -4,27 +4,29 @@ import { validateXml } from '../utils/xml.validator';
 
 type SessionCancelledPayload = {
   sessionId: string;
-  title: string;
-  date: string;
-  startTime: string;
-  endTime: string;
+  status?: 'cancelled';
   reason?: string;
+  ingeschrevenDeelnemers?: string[];
+  timestamp?: string;
 };
 
-export const sendSessionCancelled = async (payload: SessionCancelledPayload) => {
+export const sendSessionCancelled = async (
+  payload: SessionCancelledPayload
+) => {
   try {
     const channel = getChannel();
-    const queueName = 'planning.session.cancelled';
+    const exchangeName = 'planning.session.cancelled';
 
-    await channel.assertQueue(queueName, { durable: true });
+    await channel.assertExchange(exchangeName, 'fanout', { durable: true });
 
     const xml = buildXml('SessionCancelled', {
       sessionId: payload.sessionId,
-      title: payload.title,
-      date: payload.date,
-      startTime: payload.startTime,
-      endTime: payload.endTime,
-      reason: payload.reason ?? undefined,
+      status: payload.status ?? 'cancelled',
+      reason: payload.reason,
+      ingeschrevenDeelnemers: payload.ingeschrevenDeelnemers?.length
+        ? { crmMasterId: payload.ingeschrevenDeelnemers }
+        : undefined,
+      timestamp: payload.timestamp ?? new Date().toISOString(),
     });
 
     const isValid = validateXml(xml, 'SessionCancelled');
@@ -33,7 +35,7 @@ export const sendSessionCancelled = async (payload: SessionCancelledPayload) => 
       return;
     }
 
-    channel.sendToQueue(queueName, Buffer.from(xml), {
+    channel.publish(exchangeName, '', Buffer.from(xml), {
       contentType: 'application/xml',
       persistent: true,
     });

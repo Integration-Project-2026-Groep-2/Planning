@@ -4,21 +4,25 @@ import { validateXml } from '../utils/xml.validator';
 
 type SessionFullPayload = {
   sessionId: string;
-  title: string;
+  currentRegistrations: number;
   capacity: number;
+  crmMasterId?: string;
+  timestamp?: string;
 };
 
 export const sendSessionFull = async (payload: SessionFullPayload) => {
   try {
     const channel = getChannel();
-    const queueName = 'planning.session.full';
+    const exchangeName = 'planning.session.full';
 
-    await channel.assertQueue(queueName, { durable: true });
+    await channel.assertExchange(exchangeName, 'fanout', { durable: true });
 
     const xml = buildXml('SessionFull', {
       sessionId: payload.sessionId,
-      title: payload.title,
+      currentRegistrations: payload.currentRegistrations,
       capacity: payload.capacity,
+      crmMasterId: payload.crmMasterId,
+      timestamp: payload.timestamp ?? new Date().toISOString(),
     });
 
     const isValid = validateXml(xml, 'SessionFull');
@@ -27,7 +31,7 @@ export const sendSessionFull = async (payload: SessionFullPayload) => {
       return;
     }
 
-    channel.sendToQueue(queueName, Buffer.from(xml), {
+    channel.publish(exchangeName, '', Buffer.from(xml), {
       contentType: 'application/xml',
       persistent: true,
     });

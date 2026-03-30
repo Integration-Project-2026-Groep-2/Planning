@@ -4,33 +4,41 @@ import { validateXml } from '../utils/xml.validator';
 
 type SessionRescheduledPayload = {
   sessionId: string;
-  title: string;
   oldDate: string;
   oldStartTime: string;
   oldEndTime: string;
   newDate: string;
   newStartTime: string;
   newEndTime: string;
+  newLocation?: string;
   reason?: string;
+  ingeschrevenDeelnemers?: string[];
+  timestamp?: string;
 };
 
-export const sendSessionRescheduled = async (payload: SessionRescheduledPayload) => {
+export const sendSessionRescheduled = async (
+  payload: SessionRescheduledPayload
+) => {
   try {
     const channel = getChannel();
-    const queueName = 'planning.session.rescheduled';
+    const exchangeName = 'planning.session.rescheduled';
 
-    await channel.assertQueue(queueName, { durable: true });
+    await channel.assertExchange(exchangeName, 'fanout', { durable: true });
 
     const xml = buildXml('SessionRescheduled', {
       sessionId: payload.sessionId,
-      title: payload.title,
       oldDate: payload.oldDate,
       oldStartTime: payload.oldStartTime,
       oldEndTime: payload.oldEndTime,
       newDate: payload.newDate,
       newStartTime: payload.newStartTime,
       newEndTime: payload.newEndTime,
-      reason: payload.reason ?? undefined,
+      newLocation: payload.newLocation,
+      reason: payload.reason,
+      ingeschrevenDeelnemers: payload.ingeschrevenDeelnemers?.length
+        ? { crmMasterId: payload.ingeschrevenDeelnemers }
+        : undefined,
+      timestamp: payload.timestamp ?? new Date().toISOString(),
     });
 
     const isValid = validateXml(xml, 'SessionRescheduled');
@@ -39,7 +47,7 @@ export const sendSessionRescheduled = async (payload: SessionRescheduledPayload)
       return;
     }
 
-    channel.sendToQueue(queueName, Buffer.from(xml), {
+    channel.publish(exchangeName, '', Buffer.from(xml), {
       contentType: 'application/xml',
       persistent: true,
     });

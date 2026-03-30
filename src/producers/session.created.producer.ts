@@ -8,17 +8,18 @@ type SessionCreatedPayload = {
   date: string;
   startTime: string;
   endTime: string;
-  locationId?: string | null;
+  location: string;
   capacity: number;
-  status: string;
+  status: 'active' | 'cancelled' | 'full' | 'concept';
+  timestamp?: string;
 };
 
 export const sendSessionCreated = async (payload: SessionCreatedPayload) => {
   try {
     const channel = getChannel();
-    const queueName = 'planning.session.created';
+    const exchangeName = 'planning.session.created';
 
-    await channel.assertQueue(queueName, { durable: true });
+    await channel.assertExchange(exchangeName, 'fanout', { durable: true });
 
     const xml = buildXml('SessionCreated', {
       sessionId: payload.sessionId,
@@ -26,9 +27,10 @@ export const sendSessionCreated = async (payload: SessionCreatedPayload) => {
       date: payload.date,
       startTime: payload.startTime,
       endTime: payload.endTime,
-      locationId: payload.locationId ?? undefined,
-      capacity: payload.capacity,
+      location: payload.location,
       status: payload.status,
+      capacity: payload.capacity,
+      timestamp: payload.timestamp ?? new Date().toISOString(),
     });
 
     const isValid = validateXml(xml, 'SessionCreated');
@@ -37,7 +39,7 @@ export const sendSessionCreated = async (payload: SessionCreatedPayload) => {
       return;
     }
 
-    channel.sendToQueue(queueName, Buffer.from(xml), {
+    channel.publish(exchangeName, '', Buffer.from(xml), {
       contentType: 'application/xml',
       persistent: true,
     });
