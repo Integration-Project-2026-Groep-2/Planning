@@ -6,6 +6,8 @@ Alle berichten worden verstuurd via RabbitMQ met:
 
 - content_type: application/xml
 - encoding: UTF-8
+- datum formaat: YYYY-MM-DD
+- tijd formaat: HH:mm:ss
 
 ---
 
@@ -14,8 +16,9 @@ Alle berichten worden verstuurd via RabbitMQ met:
 Voor elk uitgaand bericht:
 
 - XML wordt gevalideerd met `xml.validator`
-- bij fout: error loggen
-- bericht wordt NIET verstuurd
+- bij fout:
+  - error wordt gelogd
+  - bericht wordt **NIET verstuurd**
 
 ---
 
@@ -55,7 +58,7 @@ Wordt verstuurd wanneer een sessie geannuleerd wordt.
 - reason
 
 **Gebruik:**
-- verstuurd wanneer een sessie via cancelSession geannuleerd wordt
+- verstuurd wanneer een sessie via `cancelSession` geannuleerd wordt
 
 ---
 
@@ -76,12 +79,12 @@ Wordt verstuurd wanneer een sessie verzet wordt.
 - reason
 
 **Gebruik:**
-- verstuurd wanneer een sessie via rescheduleSession naar een nieuw tijdslot verplaatst wordt
+- verstuurd wanneer een sessie via `rescheduleSession` naar een nieuw tijdslot verplaatst wordt
 
 ---
 
-### planning.session.updated
-Contract 11 naar CRM.
+### planning.session.updated.crm
+Wordt verstuurd naar CRM bij update, annulatie of verplaatsing van een sessie.
 
 **Root element:** `SessionUpdate`
 
@@ -97,8 +100,60 @@ Contract 11 naar CRM.
 - `cancelled`
 - `updated`
 
+**newTime formaat:**
+- `YYYY-MM-DD HH:mm:ss - HH:mm:ss`
+
 **Gebruik:**
 - verstuurd naar CRM bij update, annulatie of verplaatsing van een sessie
+
+---
+
+### planning.session.updated
+Wordt verstuurd naar Frontend en Mailing wanneer een sessie gewijzigd wordt.
+
+**Root element:** `SessionUpdated`
+
+**Velden:**
+- sessionId
+- title
+- date
+- startTime
+- endTime
+- locationId
+- capacity
+- status
+
+**Gebruik:**
+- verstuurd naar Frontend en Mailing bij wijziging van een sessie
+
+---
+
+### planning.session.full
+Wordt verstuurd wanneer een sessie volzet is.
+
+**Root element:** `SessionFull`
+
+**Velden:**
+- sessionId
+- title
+- capacity
+
+**Gebruik:**
+- verstuurd wanneer een sessie haar maximale capaciteit bereikt
+
+---
+
+### planning.participant.registered
+Wordt verstuurd wanneer een deelnemer succesvol geregistreerd wordt.
+
+**Root element:** `ParticipantRegistered`
+
+**Velden:**
+- sessionId
+- participantId
+
+**Gebruik:**
+- verstuurd na succesvolle registratie van een deelnemer
 
 ---
 
@@ -111,14 +166,17 @@ Consumer verwerkt nieuwe gebruikers uit CRM. Enkel users met `role = SPEAKER` wo
 
 **Validatie:**
 - XML wordt gevalideerd met `xml.validator`
-- bij ongeldige XML wordt een error gelogd
-- bericht wordt niet ge-acknowledged
+- payload wordt gevalideerd met Zod
+- bij ongeldige XML:
+  - error wordt gelogd
+  - bericht wordt niet ge-acknowledged
+  - RabbitMQ stuurt het bericht automatisch naar de DLQ (indien geconfigureerd)
 
-**DLQ gedrag:**
-- RabbitMQ stuurt ongeldige berichten automatisch naar de dead letter queue
+**DLQ:**
+- `crm.user.confirmed.dlq`
 
 **Gedrag:**
-- als role niet `SPEAKER` is, wordt het bericht genegeerd
+- als `role` niet `SPEAKER` is, wordt het bericht genegeerd
 - als speaker al bestaat op basis van `crmMasterId`, wordt geen duplicate aangemaakt
 
 ---
@@ -130,11 +188,14 @@ Consumer verwerkt updates van speakers uit CRM.
 
 **Validatie:**
 - XML wordt gevalideerd met `xml.validator`
-- bij ongeldige XML wordt een error gelogd
-- bericht wordt niet ge-acknowledged
+- payload wordt gevalideerd met Zod
+- bij ongeldige XML:
+  - error wordt gelogd
+  - bericht wordt niet ge-acknowledged
+  - RabbitMQ stuurt het bericht automatisch naar de DLQ (indien geconfigureerd)
 
-**DLQ gedrag:**
-- RabbitMQ stuurt ongeldige berichten automatisch naar de dead letter queue
+**DLQ:**
+- `crm.user.updated.dlq`
 
 **Gedrag:**
 - bestaande speaker wordt geüpdatet op basis van `crmMasterId`
@@ -148,14 +209,84 @@ Consumer verwerkt deactivatie van speakers uit CRM.
 
 **Validatie:**
 - XML wordt gevalideerd met `xml.validator`
-- bij ongeldige XML wordt een error gelogd
-- bericht wordt niet ge-acknowledged
+- payload wordt gevalideerd met Zod
+- bij ongeldige XML:
+  - error wordt gelogd
+  - bericht wordt niet ge-acknowledged
+  - RabbitMQ stuurt het bericht automatisch naar de DLQ (indien geconfigureerd)
 
-**DLQ gedrag:**
-- RabbitMQ stuurt ongeldige berichten automatisch naar de dead letter queue
+**DLQ:**
+- `crm.user.deactivated.dlq`
 
 **Gedrag:**
 - `isActive` wordt op `false` gezet op basis van `crmMasterId`
+
+---
+
+### crm.company.confirmed
+Consumer verwerkt een nieuw bedrijf uit CRM.
+
+**Root element:** `CompanyConfirmed`
+
+**Validatie:**
+- XML wordt gevalideerd met `xml.validator`
+- payload wordt gevalideerd met Zod
+- bij ongeldige XML:
+  - error wordt gelogd
+  - bericht wordt niet ge-acknowledged
+  - RabbitMQ stuurt het bericht automatisch naar de DLQ (indien geconfigureerd)
+
+**DLQ:**
+- `crm.company.confirmed.dlq`
+
+**Gedrag:**
+- zoekt speaker op basis van `crmMasterId`
+- slaat bedrijfsnaam op in `Speaker.company`
+
+---
+
+### crm.company.updated
+Consumer verwerkt een wijziging van een bedrijf uit CRM.
+
+**Root element:** `CompanyUpdated`
+
+**Validatie:**
+- XML wordt gevalideerd met `xml.validator`
+- payload wordt gevalideerd met Zod
+- bij ongeldige XML:
+  - error wordt gelogd
+  - bericht wordt niet ge-acknowledged
+  - RabbitMQ stuurt het bericht automatisch naar de DLQ (indien geconfigureerd)
+
+**DLQ:**
+- `crm.company.updated.dlq`
+
+**Gedrag:**
+- zoekt speaker op basis van `crmMasterId`
+- werkt `Speaker.company` bij
+
+---
+
+### crm.company.deactivated
+Consumer verwerkt een deactivatie van een bedrijf uit CRM.
+
+**Root element:** `CompanyDeactivated`
+
+**Validatie:**
+- XML wordt gevalideerd met `xml.validator`
+- payload wordt gevalideerd met Zod
+- bij ongeldige XML:
+  - error wordt gelogd
+  - bericht wordt niet ge-acknowledged
+  - RabbitMQ stuurt het bericht automatisch naar de DLQ (indien geconfigureerd)
+
+**DLQ:**
+- `crm.company.deactivated.dlq`
+
+**Gedrag:**
+- controleert of het bedrijf nog gekoppeld is aan toekomstige sessies
+- logt een warning indien van toepassing
+- zet `isActive = false` voor speakers met dezelfde bedrijfsnaam
 
 ---
 
