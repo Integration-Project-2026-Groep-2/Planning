@@ -35,6 +35,23 @@ const checkLocationConflict = async (
   return result.rows.length > 0;
 };
 
+// ── Hulpfunctie: status mappen naar contractwaarden ──
+const mapSessionStatus = (
+  status: string
+): 'active' | 'cancelled' | 'full' | 'concept' => {
+  switch (status) {
+    case 'actief':
+      return 'active';
+    case 'geannuleerd':
+      return 'cancelled';
+    case 'volzet':
+      return 'full';
+    case 'concept':
+    default:
+      return 'concept';
+  }
+};
+
 // ── Alle sessies ophalen ──
 export const getAllSessions = async () => {
   const result = await query(
@@ -54,7 +71,6 @@ export const getSessionById = async (sessionId: string) => {
 
 // ── Nieuwe sessie aanmaken ──
 export const createSession = async (data: CreateSessionDTO) => {
-  // Conflictdetectie: is de locatie al bezet op dit tijdslot?
   if (data.locationId) {
     const conflict = await checkLocationConflict(
       data.locationId,
@@ -87,15 +103,25 @@ export const createSession = async (data: CreateSessionDTO) => {
 
   const createdSession = result.rows[0];
 
+  let locationName = 'Onbekend';
+
+  if (createdSession.locationId) {
+    const location = await getLocationById(createdSession.locationId);
+    locationName = location?.roomName || 'Onbekend';
+  }
+
   await sendSessionCreated({
     sessionId: createdSession.sessionId,
     title: createdSession.title,
-    date: createdSession.date,
+    date:
+      createdSession.date instanceof Date
+        ? createdSession.date.toISOString().split('T')[0]
+        : String(createdSession.date).split('T')[0],
     startTime: createdSession.startTime,
     endTime: createdSession.endTime,
-    locationId: createdSession.locationId,
+    location: locationName,
     capacity: createdSession.capacity,
-    status: createdSession.status,
+    status: mapSessionStatus(createdSession.status),
   });
 
   return createdSession;
@@ -106,7 +132,6 @@ export const updateSession = async (
   sessionId: string,
   data: UpdateSessionDTO
 ) => {
-  // Conflictdetectie bij locatiewijziging
   if (data.locationId && data.date && data.startTime && data.endTime) {
     const conflict = await checkLocationConflict(
       data.locationId,
@@ -156,26 +181,26 @@ export const updateSession = async (
       newLocation = location?.roomName || 'Onbekend';
     }
 
+    const formattedDate =
+      updatedSession.date instanceof Date
+        ? updatedSession.date.toISOString().split('T')[0]
+        : String(updatedSession.date).split('T')[0];
+
     await sendSessionUpdateToCrm({
       sessionId: updatedSession.sessionId,
       sessionName: updatedSession.title,
-      newTime: `${updatedSession.date} ${updatedSession.startTime} - ${updatedSession.endTime}`,
+      newTime: `${formattedDate}T${updatedSession.startTime}`,
       newLocation,
       changeType: 'updated',
     });
 
     await sendSessionUpdated({
       sessionId: updatedSession.sessionId,
-      title: updatedSession.title,
-      date:
-        updatedSession.date instanceof Date
-          ? updatedSession.date.toISOString().split('T')[0]
-          : String(updatedSession.date).split('T')[0],
-      startTime: updatedSession.startTime,
-      endTime: updatedSession.endTime,
-      locationId: updatedSession.locationId,
-      capacity: updatedSession.capacity,
-      status: updatedSession.status,
+      changeType: 'CAPACITY_CHANGED',
+      newTime: `${formattedDate}T${updatedSession.startTime}`,
+      newLocation,
+      newTitle: updatedSession.title,
+      newCapacity: updatedSession.capacity,
     });
   }
 
@@ -195,15 +220,6 @@ export const cancelSession = async (sessionId: string) => {
   const cancelledSession = result.rows[0] || null;
 
   if (cancelledSession) {
-    await sendSessionCancelled({
-      sessionId: cancelledSession.sessionId,
-      title: cancelledSession.title,
-      date: cancelledSession.date,
-      startTime: cancelledSession.startTime,
-      endTime: cancelledSession.endTime,
-      reason: 'Session cancelled',
-    });
-
     let newLocation = 'Onbekend';
 
     if (cancelledSession.locationId) {
@@ -211,10 +227,21 @@ export const cancelSession = async (sessionId: string) => {
       newLocation = location?.roomName || 'Onbekend';
     }
 
+    const formattedDate =
+      cancelledSession.date instanceof Date
+        ? cancelledSession.date.toISOString().split('T')[0]
+        : String(cancelledSession.date).split('T')[0];
+
+    await sendSessionCancelled({
+      sessionId: cancelledSession.sessionId,
+      status: 'cancelled',
+      reason: 'Session cancelled',
+    });
+
     await sendSessionUpdateToCrm({
       sessionId: cancelledSession.sessionId,
       sessionName: cancelledSession.title,
-      newTime: `${cancelledSession.date} ${cancelledSession.startTime} - ${cancelledSession.endTime}`,
+      newTime: `${formattedDate}T${cancelledSession.startTime}`,
       newLocation,
       changeType: 'cancelled',
     });
@@ -228,11 +255,9 @@ export const rescheduleSession = async (
   sessionId: string,
   data: RescheduleSessionDTO
 ) => {
-  // Huidige sessie ophalen voor auditlog en producer
   const current = await getSessionById(sessionId);
   if (!current) return null;
 
-  // Conflictdetectie
   if (current.locationId) {
     const conflict = await checkLocationConflict(
       current.locationId,
@@ -247,7 +272,6 @@ export const rescheduleSession = async (
     }
   }
 
-  // Sessie updaten
   const updated = await query(
     `UPDATE "Session" SET
       "date"      = $1,
@@ -258,13 +282,11 @@ export const rescheduleSession = async (
     [data.date, data.startTime, data.endTime, sessionId]
   );
 
-  // Datum proper formatteren voor auditlog / XML
   const currentDate =
     current.date instanceof Date
       ? current.date.toISOString().split('T')[0]
       : String(current.date).split('T')[0];
 
-  // Wijziging opslaan in auditlog
   await query(
     `INSERT INTO "SessionChangeLog"
       ("sessionId", "oldStartTime", "newStartTime", "oldEndTime", "newEndTime", "reason")
@@ -281,18 +303,6 @@ export const rescheduleSession = async (
 
   const rescheduledSession = updated.rows[0];
 
-  await sendSessionRescheduled({
-    sessionId,
-    title: current.title,
-    oldDate: currentDate,
-    oldStartTime: current.startTime,
-    oldEndTime: current.endTime,
-    newDate: data.date,
-    newStartTime: data.startTime,
-    newEndTime: data.endTime,
-    reason: data.reason,
-  });
-
   let newLocation = 'Onbekend';
 
   if (current.locationId) {
@@ -300,10 +310,22 @@ export const rescheduleSession = async (
     newLocation = location?.roomName || 'Onbekend';
   }
 
+  await sendSessionRescheduled({
+    sessionId,
+    oldDate: currentDate,
+    oldStartTime: current.startTime,
+    oldEndTime: current.endTime,
+    newDate: data.date,
+    newStartTime: data.startTime,
+    newEndTime: data.endTime,
+    newLocation,
+    reason: data.reason,
+  });
+
   await sendSessionUpdateToCrm({
     sessionId,
     sessionName: current.title,
-    newTime: `${data.date} ${data.startTime} - ${data.endTime}`,
+    newTime: `${data.date}T${data.startTime}`,
     newLocation,
     changeType: 'rescheduled',
   });

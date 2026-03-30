@@ -1,51 +1,55 @@
 import { getChannel } from '../rabbitmq';
-import { parseStringPromise } from 'xml2js';
 import { z } from 'zod';
 import { query } from '../db';
-import { validateXml } from '../utils/xml.validator';
+import { parseXml } from '../utils/xml.parser';
 
-const CompanyUpdatedSchema = z.object({
-  crmMasterId: z.string().uuid(),
-  companyName: z.string().min(1),
+const toBoolean = (value: unknown) => {
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  return value;
+};
+
+const schema = z.object({
+  id: z.string().uuid(),
+  vatNumber: z.string().regex(/^BE[0-9]{10}$/),
+  name: z.string(),
+  email: z.string().email().optional(),
+  phone: z.string().optional(),
+  street: z.string().optional(),
+  houseNumber: z.string().optional(),
+  postalCode: z.string().optional(),
+  city: z.string().optional(),
+  country: z.string().optional(),
+  isActive: z.preprocess(toBoolean, z.boolean()),
+  updatedAt: z.string(),
 });
 
 export const startCompanyUpdatedConsumer = async () => {
   const channel = getChannel();
+
+  const exchange = 'contact.topic';
   const queue = 'crm.company.updated';
   const dlq = 'crm.company.updated.dlq';
 
+  await channel.assertExchange(exchange, 'topic', { durable: true });
   await channel.assertQueue(queue, { durable: true });
   await channel.assertQueue(dlq, { durable: true });
+
+  await channel.bindQueue(queue, exchange, 'crm.company.updated');
 
   channel.consume(queue, async (msg) => {
     if (!msg) return;
 
     try {
       const xml = msg.content.toString();
+      const data = await parseXml(xml, 'CompanyUpdated');
 
-      if (!validateXml(xml, 'CompanyUpdated')) {
-        console.error('[CRM] Ongeldige XML in crm.company.updated');
-        channel.sendToQueue(dlq, Buffer.from(xml), {
-          contentType: 'application/xml',
-          persistent: true,
-        });
-        channel.ack(msg);
-        return;
-      }
+      const parsed = schema.safeParse(data);
 
-      const parsed = await parseStringPromise(xml);
-      const data = parsed.CompanyUpdated;
-
-      const payload = {
-        crmMasterId: data.crmMasterId?.[0].trim(),
-        companyName: data.companyName?.[0] ?? data.name?.[0].trim(),
-      };
-
-      const validated = CompanyUpdatedSchema.safeParse(payload);
-      if (!validated.success) {
+      if (!parsed.success) {
         console.error(
           '[CRM] Zod validatie mislukt in crm.company.updated:',
-          validated.error.flatten()
+          parsed.error.flatten()
         );
         channel.sendToQueue(dlq, Buffer.from(xml), {
           contentType: 'application/xml',
@@ -55,18 +59,20 @@ export const startCompanyUpdatedConsumer = async () => {
         return;
       }
 
+      const company = parsed.data;
+
       await query(
         `UPDATE "Speaker"
-         SET "company" = $1
-         WHERE "crmMasterId" = $2`,
-        [validated.data.companyName, validated.data.crmMasterId]
+         SET "company" = $1,
+             "isActive" = $2
+         WHERE "crmMasterId" = $3`,
+        [company.name, company.isActive, company.id]
       );
 
       console.log('[CRM] Company geüpdatet in Speaker');
-
       channel.ack(msg);
-    } catch (error) {
-      console.error('[CRM] Error company updated:', error);
+    } catch (err) {
+      console.error('[CRM] Fout in crm.company.updated:', err);
       channel.nack(msg, false, false);
     }
   });

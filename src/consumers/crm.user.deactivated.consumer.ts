@@ -1,49 +1,53 @@
 import { getChannel } from '../rabbitmq';
-import { parseStringPromise } from 'xml2js';
+import { parseXml } from '../utils/xml.parser';
+import { z } from 'zod';
 import { query } from '../db';
-import { validateXml } from '../utils/xml.validator';
+
+const schema = z.object({
+  id: z.string().uuid(),
+  email: z.string().email(),
+  deactivatedAt: z.string(),
+});
 
 export const startUserDeactivatedConsumer = async () => {
   const channel = getChannel();
-  const queue = 'crm.user.deactivated';
-  const dlq = 'crm.user.deactivated.dlq';
 
+  const exchange = 'contact.topic';
+  const queue = 'crm.user.deactivated';
+
+  await channel.assertExchange(exchange, 'topic', { durable: true });
   await channel.assertQueue(queue, { durable: true });
-  await channel.assertQueue(dlq, { durable: true });
+
+  await channel.bindQueue(queue, exchange, 'crm.user.deactivated');
 
   channel.consume(queue, async (msg) => {
     if (!msg) return;
 
     try {
       const xml = msg.content.toString();
+      const data = await parseXml(xml, 'UserDeactivated');
 
-      const isValid = validateXml(xml, 'UserDeactivated');
-      if (!isValid) {
-        console.error('[CRM] Ongeldige XML in crm.user.deactivated');
-        channel.sendToQueue(dlq, Buffer.from(xml), {
-          contentType: 'application/xml',
-          persistent: true,
-        });
+      const parsed = schema.safeParse(data);
+
+      if (!parsed.success) {
+        console.error('[CRM] Zod validatie mislukt:', parsed.error.flatten());
         channel.ack(msg);
         return;
       }
 
-      const data = await parseStringPromise(xml);
-      const user = data.UserDeactivated;
+      const user = parsed.data;
 
       await query(
         `UPDATE "Speaker"
          SET "isActive" = false
          WHERE "crmMasterId" = $1`,
-        [user.crmMasterId?.[0]]
+        [user.id]
       );
 
       console.log('[CRM] Speaker gedeactiveerd');
-
       channel.ack(msg);
     } catch (err) {
-      console.error('[CRM] Error deactivated:', err);
-      channel.nack(msg, false, false);
+      console.error('[CRM] Fout:', err);
     }
   });
 };

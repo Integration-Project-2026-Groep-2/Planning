@@ -5,17 +5,20 @@ import { validateXml } from '../utils/xml.validator';
 type SessionUpdateCrmPayload = {
   sessionId: string;
   sessionName: string;
-  newTime: string;
-  newLocation: string;
+  newTime?: string;
+  newLocation?: string;
   changeType: 'rescheduled' | 'cancelled' | 'updated';
 };
 
-export const sendSessionUpdateToCrm = async (payload: SessionUpdateCrmPayload) => {
+export const sendSessionUpdateToCrm = async (
+  payload: SessionUpdateCrmPayload
+) => {
   try {
     const channel = getChannel();
-    const queueName = 'planning.session.updated';
+    const exchangeName = 'planning.session.updated';
+    const routingKey = 'planning.session.updated';
 
-    await channel.assertQueue(queueName, { durable: true });
+    await channel.assertExchange(exchangeName, 'topic', { durable: true });
 
     const xml = buildXml('SessionUpdate', {
       sessionId: payload.sessionId,
@@ -31,7 +34,7 @@ export const sendSessionUpdateToCrm = async (payload: SessionUpdateCrmPayload) =
       return;
     }
 
-    channel.sendToQueue(queueName, Buffer.from(xml), {
+    channel.publish(exchangeName, routingKey, Buffer.from(xml), {
       contentType: 'application/xml',
       persistent: true,
     });
