@@ -7,6 +7,9 @@ import {
   startUserConfirmedConsumer,
   startUserUpdatedConsumer,
   startUserDeactivatedConsumer,
+  startCompanyConfirmedConsumer,
+  startCompanyUpdatedConsumer,
+  startCompanyDeactivatedConsumer,
 } from './consumers';
 
 const app = express();
@@ -28,6 +31,10 @@ const start = async () => {
   await startUserConfirmedConsumer();
   await startUserUpdatedConsumer();
   await startUserDeactivatedConsumer();
+
+  await startCompanyConfirmedConsumer();
+  await startCompanyUpdatedConsumer();
+  await startCompanyDeactivatedConsumer();
 
   app.listen(PORT, () => {
     console.log(`Planning service running on port ${PORT}`);

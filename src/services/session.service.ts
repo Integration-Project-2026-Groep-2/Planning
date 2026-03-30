@@ -9,6 +9,7 @@ import {
   sendSessionCancelled,
   sendSessionRescheduled,
   sendSessionUpdateToCrm,
+  sendSessionUpdated,
 } from '../producers';
 import { getLocationById } from './location.service';
 
@@ -161,6 +162,20 @@ export const updateSession = async (
       newTime: `${updatedSession.date} ${updatedSession.startTime} - ${updatedSession.endTime}`,
       newLocation,
       changeType: 'updated',
+    });
+
+    await sendSessionUpdated({
+      sessionId: updatedSession.sessionId,
+      title: updatedSession.title,
+      date:
+        updatedSession.date instanceof Date
+          ? updatedSession.date.toISOString().split('T')[0]
+          : String(updatedSession.date).split('T')[0],
+      startTime: updatedSession.startTime,
+      endTime: updatedSession.endTime,
+      locationId: updatedSession.locationId,
+      capacity: updatedSession.capacity,
+      status: updatedSession.status,
     });
   }
 
