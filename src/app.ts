@@ -1,6 +1,13 @@
 import 'dotenv/config';
 import express from 'express';
 import { connectRabbitMQ } from './rabbitmq';
+import { startHeartbeatProducer } from './producers';
+import routes from './routes';
+import {
+  startUserConfirmedConsumer,
+  startUserUpdatedConsumer,
+  startUserDeactivatedConsumer,
+} from './consumers';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -11,8 +18,17 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'planning' });
 });
 
+app.use('/api', routes);
+
 const start = async () => {
   await connectRabbitMQ();
+
+  startHeartbeatProducer();
+
+  await startUserConfirmedConsumer();
+  await startUserUpdatedConsumer();
+  await startUserDeactivatedConsumer();
+
   app.listen(PORT, () => {
     console.log(`Planning service running on port ${PORT}`);
   });
