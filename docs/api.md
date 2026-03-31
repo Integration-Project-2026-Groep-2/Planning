@@ -207,13 +207,98 @@ Verzet een sessie naar een nieuw tijdstip. Slaat de wijziging op in de SessionCh
 **Response 409** — locatieconflict
 ```json
 { "error": "Locatie is al bezet op dit tijdslot" }
+
+
 ```
+## Registraties
+
+### POST /api/sessions/:id/register
+Schrijft een deelnemer in voor een sessie. Controleert capaciteit automatisch.
+
+**Verplichte velden:** `participantId`
+
+**Request body**
+```json
+{
+  "participantId": "uuid-van-deelnemer",
+  "crmMasterId": "uuid-van-crm-master (optioneel)"
+}
+```
+
+**Validatieregels**
+- `participantId` — verplicht, moet een geldig UUID zijn
+- `crmMasterId` — optioneel, moet een geldig UUID zijn
+
+**Response 201**
+```json
+{
+  "registrationId": "uuid",
+  "sessionId": "uuid",
+  "participantId": "uuid",
+  "crmMasterId": null,
+  "registrationTime": "2026-05-15T09:00:00.000Z"
+}
+```
+
+**Response 400** — sessie geannuleerd
+```json
+{ "error": "Sessie is geannuleerd" }
+```
+
+**Response 404** — sessie niet gevonden
+```json
+{ "error": "Sessie niet gevonden" }
+```
+
+**Response 409** — al ingeschreven
+```json
+{ "error": "Deelnemer is al ingeschreven voor deze sessie" }
+```
+
+**Response 409** — sessie volzet
+```json
+{ "error": "Sessie is volzet" }
+```
+
+**RabbitMQ events**
+- `planning.participant.registered` — altijd verstuurd bij succesvolle inschrijving
+- `planning.session.full` — verstuurd wanneer sessie volzet is, status wordt automatisch `volzet`
 
 ---
 
+### DELETE /api/sessions/:id/register
+Annuleert de inschrijving van een deelnemer. Als de sessie volzet was, wordt de status teruggezet op `actief`.
+
+**Verplichte velden:** `participantId`
+
+**Request body**
+```json
+{
+  "participantId": "uuid-van-deelnemer"
+}
+```
+
+**Response 200**
+```json
+{
+  "message": "Inschrijving geannuleerd",
+  "registration": {
+    "registrationId": "uuid",
+    "sessionId": "uuid",
+    "participantId": "uuid"
+  }
+}
+```
+
+**Response 404**
+```json
+{ "error": "Inschrijving niet gevonden" }
+```
+
+
 ## Locations
 
-### GET /api/locations
+dir src\producers### GET /api/locations
 Geeft alle locaties terug, gesorteerd op roomName.
 
 **Request**
