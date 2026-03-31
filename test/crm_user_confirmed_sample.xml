@@ -1,0 +1,10 @@
+<UserConfirmed> 
+  <id>550e8400-e29b-41d4-a716-446655440003</id> 
+  <email>test@test.be</email> 
+  <firstName>Test</firstName> 
+  <lastName>User</lastName> 
+  <role>SPEAKER</role> 
+  <isActive>true</isActive> 
+  <gdprConsent>true</gdprConsent> 
+  <confirmedAt>2026-03-30T13:00:00Z</confirmedAt> 
+</UserConfirmed> 
