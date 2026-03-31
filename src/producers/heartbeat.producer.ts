@@ -10,19 +10,16 @@ const sendHeartbeat = async () => {
   try {
     const channel = getChannel();
     const exchange = 'heartbeat.direct';
-    const routingKey = 'planning.heartbeat';
+    const routingKey = 'routing.heartbeat';
  
     await channel.assertExchange(exchange, 'direct', { durable: true });
  
     const timestamp = new Date().toISOString();
-    const heartbeatMessage = `<Heartbeat>
+    const heartbeatMessage = `<?xml version="1.0" encoding="UTF-8"?>
+<heartbeat>
   <serviceId>planning</serviceId>
   <timestamp>${timestamp}</timestamp>
-  <status>healthy</status>
-  <dbOk>true</dbOk>
-  <rabbitmqOk>true</rabbitmqOk>
-  <outlookOk>true</outlookOk>
-</Heartbeat>`;
+</heartbeat>`;
  
     channel.publish(exchange, routingKey, Buffer.from(heartbeatMessage), {
       contentType: 'application/xml',
