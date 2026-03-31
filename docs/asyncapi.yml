@@ -39,9 +39,9 @@ channels:
       amqp:
         is: routingKey
         exchange:
-          name: planning.heartbeat
-          type: fanout
-          durable: false
+          name: heartbeat.direct
+          type: direct
+          durable: true
 
   planning.session.created:
     address: planning.session.created
@@ -485,7 +485,7 @@ components:
 
     Heartbeat:
       type: object
-      required: [serviceId, timestamp, status, dbOk, rabbitmqOk, outlookOk]
+      required: [serviceId, timestamp]
       properties:
         serviceId:
           type: string
@@ -493,15 +493,6 @@ components:
         timestamp:
           type: string
           format: date-time
-        status:
-          type: string
-          enum: [healthy, degraded, unhealthy, unknown]
-        dbOk:
-          type: boolean
-        rabbitmqOk:
-          type: boolean
-        outlookOk:
-          type: boolean
 
     SessionCreated:
       type: object
