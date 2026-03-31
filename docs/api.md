@@ -207,9 +207,53 @@ Verzet een sessie naar een nieuw tijdstip. Slaat de wijziging op in de SessionCh
 **Response 409** — locatieconflict
 ```json
 { "error": "Locatie is al bezet op dit tijdslot" }
-
-
 ```
+
+---
+
+### GET /api/sessions/:id/logs
+Geeft alle wijzigingen van een sessie terug. Gesorteerd op datum (nieuwste eerst).
+
+**Request**
+- Geen body vereist
+
+**Response 200**
+```json
+[
+  {
+    "logId": "a1f3e8b2-7c9d-4a21-b3e5-f8c2d1a4b7e9",
+    "sessionId": "4e61b896-8ad9-4235-bbba-8ae31d91ba56",
+    "oldStartTime": "2026-05-15 09:00:00",
+    "newStartTime": "2026-05-15 10:00:00",
+    "oldEndTime": "2026-05-15 10:30:00",
+    "newEndTime": "2026-05-15 11:30:00",
+    "reason": "Sessie gewijzigd via PUT",
+    "changedAt": "2026-05-15T09:15:30.123Z",
+    "changedBy": null
+  },
+  {
+    "logId": "b2g4f9c3-8d0e-5b32-c4f6-g9d3e2b5c8f0",
+    "sessionId": "4e61b896-8ad9-4235-bbba-8ae31d91ba56",
+    "oldStartTime": "2026-05-15 09:00:00",
+    "newStartTime": null,
+    "oldEndTime": "2026-05-15 10:30:00",
+    "newEndTime": null,
+    "reason": "Sessie geannuleerd",
+    "changedAt": "2026-05-15T10:45:00.000Z",
+    "changedBy": null
+  }
+]
+```
+
+**Response 404** — sessie niet gevonden
+```json
+{ "error": "Sessie niet gevonden" }
+```
+
+**Opmerking:** Elke keer dat een sessie wordt gewijzigd (`PUT`), geannuleerd (`PATCH /cancel`) of verzet (`PATCH /reschedule`), wordt automatisch een log entry aangemaakt. Deze logs dienen als audittrail voor alle wijzigingen aan sessies.
+
+---
+
 ## Registraties
 
 ### POST /api/sessions/:id/register
