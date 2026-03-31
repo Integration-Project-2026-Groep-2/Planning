@@ -12,6 +12,7 @@ import {
   sendSessionUpdated,
 } from '../producers';
 import { getLocationById } from './location.service';
+import { createLog } from './changelog.service';
 
 // ── Hulpfunctie: controleer of locatie al bezet is op dat tijdslot ──
 const checkLocationConflict = async (
@@ -33,6 +34,13 @@ const checkLocationConflict = async (
   );
 
   return result.rows.length > 0;
+};
+
+// ── Hulpfunctie: datum formatteren ──
+const formatDate = (date: Date | string): string => {
+  return date instanceof Date
+    ? date.toISOString().split('T')[0]
+    : String(date).split('T')[0];
 };
 
 // ── Hulpfunctie: status mappen naar contractwaarden ──
@@ -104,7 +112,6 @@ export const createSession = async (data: CreateSessionDTO) => {
   const createdSession = result.rows[0];
 
   let locationName = 'Onbekend';
-
   if (createdSession.locationId) {
     const location = await getLocationById(createdSession.locationId);
     locationName = location?.roomName || 'Onbekend';
@@ -113,10 +120,7 @@ export const createSession = async (data: CreateSessionDTO) => {
   await sendSessionCreated({
     sessionId: createdSession.sessionId,
     title: createdSession.title,
-    date:
-      createdSession.date instanceof Date
-        ? createdSession.date.toISOString().split('T')[0]
-        : String(createdSession.date).split('T')[0],
+    date: formatDate(createdSession.date),
     startTime: createdSession.startTime,
     endTime: createdSession.endTime,
     location: locationName,
@@ -132,6 +136,10 @@ export const updateSession = async (
   sessionId: string,
   data: UpdateSessionDTO
 ) => {
+  // Huidige sessie ophalen zodat we de oude waarden kunnen bewaren in de log
+  const current = await getSessionById(sessionId);
+  if (!current) return null;
+
   if (data.locationId && data.date && data.startTime && data.endTime) {
     const conflict = await checkLocationConflict(
       data.locationId,
@@ -174,22 +182,29 @@ export const updateSession = async (
   const updatedSession = result.rows[0] || null;
 
   if (updatedSession) {
-    let newLocation = 'Onbekend';
+    const currentDate = formatDate(current.date);
+    const updatedDate = formatDate(updatedSession.date);
 
+    // ── Log de wijziging in SessionChangeLog ──
+    await createLog({
+      sessionId,
+      oldStartTime: `${currentDate} ${current.startTime}`,
+      newStartTime: `${updatedDate} ${updatedSession.startTime}`,
+      oldEndTime: `${currentDate} ${current.endTime}`,
+      newEndTime: `${updatedDate} ${updatedSession.endTime}`,
+      reason: 'Sessie gewijzigd via PUT',
+    });
+
+    let newLocation = 'Onbekend';
     if (updatedSession.locationId) {
       const location = await getLocationById(updatedSession.locationId);
       newLocation = location?.roomName || 'Onbekend';
     }
 
-    const formattedDate =
-      updatedSession.date instanceof Date
-        ? updatedSession.date.toISOString().split('T')[0]
-        : String(updatedSession.date).split('T')[0];
-
     await sendSessionUpdateToCrm({
       sessionId: updatedSession.sessionId,
       sessionName: updatedSession.title,
-      newTime: `${formattedDate}T${updatedSession.startTime}`,
+      newTime: `${updatedDate}T${updatedSession.startTime}`,
       newLocation,
       changeType: 'updated',
     });
@@ -197,7 +212,7 @@ export const updateSession = async (
     await sendSessionUpdated({
       sessionId: updatedSession.sessionId,
       changeType: 'CAPACITY_CHANGED',
-      newTime: `${formattedDate}T${updatedSession.startTime}`,
+      newTime: `${updatedDate}T${updatedSession.startTime}`,
       newLocation,
       newTitle: updatedSession.title,
       newCapacity: updatedSession.capacity,
@@ -209,6 +224,10 @@ export const updateSession = async (
 
 // ── Sessie annuleren ──
 export const cancelSession = async (sessionId: string) => {
+  // Huidige sessie ophalen voor de log
+  const current = await getSessionById(sessionId);
+  if (!current) return null;
+
   const result = await query(
     `UPDATE "Session"
      SET "status" = 'geannuleerd'
@@ -220,17 +239,25 @@ export const cancelSession = async (sessionId: string) => {
   const cancelledSession = result.rows[0] || null;
 
   if (cancelledSession) {
-    let newLocation = 'Onbekend';
+    const currentDate = formatDate(current.date);
 
+    // ── Log de annulering in SessionChangeLog ──
+    await createLog({
+      sessionId,
+      oldStartTime: `${currentDate} ${current.startTime}`,
+      newStartTime: null,
+      oldEndTime: `${currentDate} ${current.endTime}`,
+      newEndTime: null,
+      reason: 'Sessie geannuleerd',
+    });
+
+    let newLocation = 'Onbekend';
     if (cancelledSession.locationId) {
       const location = await getLocationById(cancelledSession.locationId);
       newLocation = location?.roomName || 'Onbekend';
     }
 
-    const formattedDate =
-      cancelledSession.date instanceof Date
-        ? cancelledSession.date.toISOString().split('T')[0]
-        : String(cancelledSession.date).split('T')[0];
+    const formattedDate = formatDate(cancelledSession.date);
 
     await sendSessionCancelled({
       sessionId: cancelledSession.sessionId,
@@ -282,30 +309,22 @@ export const rescheduleSession = async (
     [data.date, data.startTime, data.endTime, sessionId]
   );
 
-  const currentDate =
-    current.date instanceof Date
-      ? current.date.toISOString().split('T')[0]
-      : String(current.date).split('T')[0];
+  const currentDate = formatDate(current.date);
 
-  await query(
-    `INSERT INTO "SessionChangeLog"
-      ("sessionId", "oldStartTime", "newStartTime", "oldEndTime", "newEndTime", "reason")
-     VALUES ($1, $2, $3, $4, $5, $6)`,
-    [
-      sessionId,
-      `${currentDate} ${current.startTime}`,
-      `${data.date} ${data.startTime}`,
-      `${currentDate} ${current.endTime}`,
-      `${data.date} ${data.endTime}`,
-      data.reason,
-    ]
-  );
+  // ── Log het verzetten via de changelog service ──
+  await createLog({
+    sessionId,
+    oldStartTime: `${currentDate} ${current.startTime}`,
+    newStartTime: `${data.date} ${data.startTime}`,
+    oldEndTime: `${currentDate} ${current.endTime}`,
+    newEndTime: `${data.date} ${data.endTime}`,
+    reason: data.reason,
+  });
 
   const rescheduledSession = updated.rows[0];
 
   let newLocation = 'Onbekend';
-
-  if (current.locationId) {
+ if (current.locationId) {
     const location = await getLocationById(current.locationId);
     newLocation = location?.roomName || 'Onbekend';
   }
