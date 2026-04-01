@@ -1,0 +1,11 @@
+<UserUpdated> 
+  <id>550e8400-e29b-41d4-a716-446655440003</id> 
+  <email>test.updated@test.be</email> 
+  <firstName>TestUpdated</firstName> 
+  <lastName>UserUpdated</lastName> 
+  <phone>0470000000</phone> 
+  <role>SPEAKER</role> 
+  <isActive>true</isActive> 
+  <gdprConsent>true</gdprConsent> 
+  <updatedAt>2026-03-30T13:10:00Z</updatedAt> 
+</UserUpdated> 

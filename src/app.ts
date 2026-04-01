@@ -7,6 +7,9 @@ import {
   startUserConfirmedConsumer,
   startUserUpdatedConsumer,
   startUserDeactivatedConsumer,
+  startCompanyConfirmedConsumer,
+  startCompanyUpdatedConsumer,
+  startCompanyDeactivatedConsumer,
 } from './consumers';
 
 const app = express();
@@ -21,13 +24,20 @@ app.get('/health', (req, res) => {
 app.use('/api', routes);
 
 const start = async () => {
-  await connectRabbitMQ();
+  try {
+    await connectRabbitMQ();
+    startHeartbeatProducer();
 
-  startHeartbeatProducer();
+    await startUserConfirmedConsumer();
+    await startUserUpdatedConsumer();
+    await startUserDeactivatedConsumer();
 
-  await startUserConfirmedConsumer();
-  await startUserUpdatedConsumer();
-  await startUserDeactivatedConsumer();
+    await startCompanyConfirmedConsumer();
+    await startCompanyUpdatedConsumer();
+    await startCompanyDeactivatedConsumer();
+  } catch (err) {
+    console.warn('RabbitMQ niet bereikbaar — service start zonder RabbitMQ');
+  }
 
   app.listen(PORT, () => {
     console.log(`Planning service running on port ${PORT}`);

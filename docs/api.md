@@ -211,9 +211,138 @@ Verzet een sessie naar een nieuw tijdstip. Slaat de wijziging op in de SessionCh
 
 ---
 
+### GET /api/sessions/:id/logs
+Geeft alle wijzigingen van een sessie terug. Gesorteerd op datum (nieuwste eerst).
+
+**Request**
+- Geen body vereist
+
+**Response 200**
+```json
+[
+  {
+    "logId": "a1f3e8b2-7c9d-4a21-b3e5-f8c2d1a4b7e9",
+    "sessionId": "4e61b896-8ad9-4235-bbba-8ae31d91ba56",
+    "oldStartTime": "2026-05-15 09:00:00",
+    "newStartTime": "2026-05-15 10:00:00",
+    "oldEndTime": "2026-05-15 10:30:00",
+    "newEndTime": "2026-05-15 11:30:00",
+    "reason": "Sessie gewijzigd via PUT",
+    "changedAt": "2026-05-15T09:15:30.123Z",
+    "changedBy": null
+  },
+  {
+    "logId": "b2g4f9c3-8d0e-5b32-c4f6-g9d3e2b5c8f0",
+    "sessionId": "4e61b896-8ad9-4235-bbba-8ae31d91ba56",
+    "oldStartTime": "2026-05-15 09:00:00",
+    "newStartTime": null,
+    "oldEndTime": "2026-05-15 10:30:00",
+    "newEndTime": null,
+    "reason": "Sessie geannuleerd",
+    "changedAt": "2026-05-15T10:45:00.000Z",
+    "changedBy": null
+  }
+]
+```
+
+**Response 404** — sessie niet gevonden
+```json
+{ "error": "Sessie niet gevonden" }
+```
+
+**Opmerking:** Elke keer dat een sessie wordt gewijzigd (`PUT`), geannuleerd (`PATCH /cancel`) of verzet (`PATCH /reschedule`), wordt automatisch een log entry aangemaakt. Deze logs dienen als audittrail voor alle wijzigingen aan sessies.
+
+---
+
+## Registraties
+
+### POST /api/sessions/:id/register
+Schrijft een deelnemer in voor een sessie. Controleert capaciteit automatisch.
+
+**Verplichte velden:** `participantId`
+
+**Request body**
+```json
+{
+  "participantId": "uuid-van-deelnemer",
+  "crmMasterId": "uuid-van-crm-master (optioneel)"
+}
+```
+
+**Validatieregels**
+- `participantId` — verplicht, moet een geldig UUID zijn
+- `crmMasterId` — optioneel, moet een geldig UUID zijn
+
+**Response 201**
+```json
+{
+  "registrationId": "uuid",
+  "sessionId": "uuid",
+  "participantId": "uuid",
+  "crmMasterId": null,
+  "registrationTime": "2026-05-15T09:00:00.000Z"
+}
+```
+
+**Response 400** — sessie geannuleerd
+```json
+{ "error": "Sessie is geannuleerd" }
+```
+
+**Response 404** — sessie niet gevonden
+```json
+{ "error": "Sessie niet gevonden" }
+```
+
+**Response 409** — al ingeschreven
+```json
+{ "error": "Deelnemer is al ingeschreven voor deze sessie" }
+```
+
+**Response 409** — sessie volzet
+```json
+{ "error": "Sessie is volzet" }
+```
+
+**RabbitMQ events**
+- `planning.participant.registered` — altijd verstuurd bij succesvolle inschrijving
+- `planning.session.full` — verstuurd wanneer sessie volzet is, status wordt automatisch `volzet`
+
+---
+
+### DELETE /api/sessions/:id/register
+Annuleert de inschrijving van een deelnemer. Als de sessie volzet was, wordt de status teruggezet op `actief`.
+
+**Verplichte velden:** `participantId`
+
+**Request body**
+```json
+{
+  "participantId": "uuid-van-deelnemer"
+}
+```
+
+**Response 200**
+```json
+{
+  "message": "Inschrijving geannuleerd",
+  "registration": {
+    "registrationId": "uuid",
+    "sessionId": "uuid",
+    "participantId": "uuid"
+  }
+}
+```
+
+**Response 404**
+```json
+{ "error": "Inschrijving niet gevonden" }
+```
+
+
 ## Locations
 
-### GET /api/locations
+dir src\producers### GET /api/locations
 Geeft alle locaties terug, gesorteerd op roomName.
 
 **Request**
