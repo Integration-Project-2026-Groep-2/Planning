@@ -16,10 +16,10 @@ const sendHeartbeat = async () => {
  
     const timestamp = new Date().toISOString();
     const heartbeatMessage = `<?xml version="1.0" encoding="UTF-8"?>
-<heartbeat>
+<Heartbeat>
   <serviceId>planning</serviceId>
   <timestamp>${timestamp}</timestamp>
-</heartbeat>`;
+</Heartbeat>`;
  
     channel.publish(exchange, routingKey, Buffer.from(heartbeatMessage), {
       contentType: 'application/xml',
