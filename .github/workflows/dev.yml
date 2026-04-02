@@ -8,7 +8,6 @@ on:
       - dev
 
 env:
-  SERVICE_NAME: planning
   IMAGE: ghcr.io/integration-project-2026-groep-2/planning
 
 jobs:
@@ -49,4 +48,4 @@ jobs:
           host: ${{ secrets.DEV_HOST }}
           username: ${{ secrets.DEV_USER }}
           key: ${{ secrets.DEV_SSH_KEY }}
-          script: ${{ env.SERVICE_NAME }}
+          script: ${{ vars.SERVICE_NAME }}
