@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
            elementFormDefault="unqualified"
-           version="1.1">
+           version="1.2">
 
   <!-- ══════════════════════════════════════════════════════════════════
        GEDEELDE TYPES
@@ -45,21 +45,11 @@
     </xs:restriction>
   </xs:simpleType>
 
-  <xs:simpleType name="SyncStatusType">
-    <xs:restriction base="xs:string">
-      <xs:enumeration value="synced"/>
-      <xs:enumeration value="pending"/>
-      <xs:enumeration value="failed"/>
-    </xs:restriction>
-  </xs:simpleType>
-
   <xs:simpleType name="ChangeTypeType">
     <xs:restriction base="xs:string">
-      <xs:enumeration value="TITLE_CHANGED"/>
-      <xs:enumeration value="LOCATION_CHANGED"/>
-      <xs:enumeration value="TIME_CHANGED"/>
-      <xs:enumeration value="CAPACITY_CHANGED"/>
-      <xs:enumeration value="SPEAKER_CHANGED"/>
+      <xs:enumeration value="rescheduled"/>
+      <xs:enumeration value="cancelled"/>
+      <xs:enumeration value="updated"/>
     </xs:restriction>
   </xs:simpleType>
 
@@ -72,6 +62,13 @@
       <xs:enumeration value="CASHIER"/>
       <xs:enumeration value="BAR_STAFF"/>
       <xs:enumeration value="ADMIN"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="PlanningUserRoleType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="SPEAKER"/>
+      <xs:enumeration value="VISITOR"/>
     </xs:restriction>
   </xs:simpleType>
 
@@ -88,46 +85,50 @@
     </xs:restriction>
   </xs:simpleType>
 
-  <xs:simpleType name="HeartbeatStatusType">
-    <xs:restriction base="xs:string">
-      <xs:enumeration value="healthy"/>
-      <xs:enumeration value="degraded"/>
-      <xs:enumeration value="unhealthy"/>
-      <xs:enumeration value="unknown"/>
-    </xs:restriction>
-  </xs:simpleType>
-
   <xs:simpleType name="PositiveIntType">
     <xs:restriction base="xs:integer">
       <xs:minInclusive value="1"/>
     </xs:restriction>
   </xs:simpleType>
 
-  <!-- Herbruikbaar type voor lijst van deelnemers -->
-  <xs:complexType name="DeelnemersType">
-    <xs:sequence>
-      <xs:element name="crmMasterId" type="UUIDType" minOccurs="0" maxOccurs="unbounded"/>
-    </xs:sequence>
-  </xs:complexType>
+<xs:complexType name="ParticipantIdsType">
+  <xs:sequence>
+    <xs:element name="participantId" type="UUIDType" minOccurs="0" maxOccurs="unbounded"/>
+  </xs:sequence>
+</xs:complexType>
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       PLANNING → CONTROL ROOM
+       Contract 2 — routing.heartbeat → heartbeat.direct
+  ══════════════════════════════════════════════════════════════════ -->
+
+  <xs:element name="Heartbeat">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="serviceId" type="xs:string"/>
+        <xs:element name="timestamp" type="ISO8601DateTimeType"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
 
   <!-- ══════════════════════════════════════════════════════════════════
        PLANNING → FRONTEND / CONTROL ROOM
-       Contract 3  — planning.session.created  → Frontend
-       Contract 12 — planning.session.created  → Control Room
+       Contract 3  — planning.session.created → Frontend
+       Contract 12 — planning.session.created → Control Room
   ══════════════════════════════════════════════════════════════════ -->
 
   <xs:element name="SessionCreated">
     <xs:complexType>
       <xs:sequence>
-        <xs:element name="sessionId"  type="UUIDType"/>
-        <xs:element name="title"      type="xs:string"/>
-        <xs:element name="date"       type="xs:date"/>
-        <xs:element name="startTime"  type="xs:time"/>
-        <xs:element name="endTime"    type="xs:time"/>
-        <xs:element name="location"   type="xs:string"/>
-        <xs:element name="status"     type="SessionStatusType"/>
-        <xs:element name="capacity"   type="PositiveIntType"/>
-        <xs:element name="timestamp"  type="ISO8601DateTimeType"/>
+        <xs:element name="sessionId" type="UUIDType"/>
+        <xs:element name="title"     type="xs:string"/>
+        <xs:element name="date"      type="xs:date"/>
+        <xs:element name="startTime" type="xs:time"/>
+        <xs:element name="endTime"   type="xs:time"/>
+        <xs:element name="location"  type="xs:string"/>
+        <xs:element name="status"    type="SessionStatusType"/>
+        <xs:element name="capacity"  type="PositiveIntType"/>
+        <xs:element name="timestamp" type="ISO8601DateTimeType"/>
       </xs:sequence>
     </xs:complexType>
   </xs:element>
@@ -143,12 +144,11 @@
     <xs:complexType>
       <xs:sequence>
         <xs:element name="sessionId"              type="UUIDType"/>
+        <xs:element name="sessionName"            type="xs:string"/>
         <xs:element name="changeType"             type="ChangeTypeType"/>
         <xs:element name="newTime"                type="ISO8601DateTimeType" minOccurs="0"/>
         <xs:element name="newLocation"            type="xs:string"           minOccurs="0"/>
-        <xs:element name="newTitle"               type="xs:string"           minOccurs="0"/>
-        <xs:element name="newCapacity"            type="PositiveIntType"     minOccurs="0"/>
-        <xs:element name="ingeschrevenDeelnemers" type="DeelnemersType"      minOccurs="0"/>
+        <xs:element name="participantIds" type="ParticipantIdsType"      minOccurs="0"/>
         <xs:element name="timestamp"              type="ISO8601DateTimeType"/>
       </xs:sequence>
     </xs:complexType>
@@ -167,7 +167,7 @@
         <xs:element name="sessionId"              type="UUIDType"/>
         <xs:element name="status"                 type="SessionStatusType"/>
         <xs:element name="reason"                 type="xs:string"      minOccurs="0"/>
-        <xs:element name="ingeschrevenDeelnemers" type="DeelnemersType" minOccurs="0"/>
+        <xs:element name="participantIds" type="ParticipantIdsType" minOccurs="0"/>
         <xs:element name="timestamp"              type="ISO8601DateTimeType"/>
       </xs:sequence>
     </xs:complexType>
@@ -191,14 +191,14 @@
         <xs:element name="newEndTime"             type="xs:time"/>
         <xs:element name="newLocation"            type="xs:string"      minOccurs="0"/>
         <xs:element name="reason"                 type="xs:string"      minOccurs="0"/>
-        <xs:element name="ingeschrevenDeelnemers" type="DeelnemersType" minOccurs="0"/>
+        <xs:element name="participantIds" type="ParticipantIdsType" minOccurs="0"/>
         <xs:element name="timestamp"              type="ISO8601DateTimeType"/>
       </xs:sequence>
     </xs:complexType>
   </xs:element>
 
   <!-- ══════════════════════════════════════════════════════════════════
-       PLANNING → FRONTEND / MAILING / CONTROL ROOM
+       PLANNING → FRONTEND / MAILING
        Contract 7  — planning.session.full → Frontend
        Contract 11 — planning.session.full → Mailing
   ══════════════════════════════════════════════════════════════════ -->
@@ -223,29 +223,11 @@
   <xs:element name="SessionError">
     <xs:complexType>
       <xs:sequence>
-        <xs:element name="errorType"  type="ErrorTypeType"/>
-        <xs:element name="message"    type="xs:string"/>
-        <xs:element name="sessionId"  type="UUIDType"           minOccurs="0"/>
-        <xs:element name="service"    type="xs:string"/>
-        <xs:element name="timestamp"  type="ISO8601DateTimeType"/>
-      </xs:sequence>
-    </xs:complexType>
-  </xs:element>
-
-  <!-- ══════════════════════════════════════════════════════════════════
-       PLANNING → CONTROL ROOM
-       Contract 2 — planning.heartbeat → Control Room
-  ══════════════════════════════════════════════════════════════════ -->
-
-  <xs:element name="Heartbeat">
-    <xs:complexType>
-      <xs:sequence>
-        <xs:element name="serviceId"   type="xs:string"/>
-        <xs:element name="timestamp"   type="ISO8601DateTimeType"/>
-        <xs:element name="status"      type="HeartbeatStatusType"/>
-        <xs:element name="dbOk"        type="xs:boolean"/>
-        <xs:element name="rabbitmqOk"  type="xs:boolean"/>
-        <xs:element name="outlookOk"   type="xs:boolean"/>
+        <xs:element name="errorType" type="ErrorTypeType"/>
+        <xs:element name="message"   type="xs:string"/>
+        <xs:element name="sessionId" type="UUIDType"           minOccurs="0"/>
+        <xs:element name="service"   type="xs:string"/>
+        <xs:element name="timestamp" type="ISO8601DateTimeType"/>
       </xs:sequence>
     </xs:complexType>
   </xs:element>
@@ -258,12 +240,67 @@
   <xs:element name="ParticipantRegistered">
     <xs:complexType>
       <xs:sequence>
-        <xs:element name="sessionId"             type="UUIDType"/>
-        <xs:element name="crmMasterId"           type="UUIDType"/>
-        <xs:element name="currentRegistrations"  type="xs:nonNegativeInteger"/>
-        <xs:element name="capacity"              type="PositiveIntType"/>
-        <xs:element name="registrationTime"      type="ISO8601DateTimeType"/>
-        <xs:element name="timestamp"             type="ISO8601DateTimeType"/>
+        <xs:element name="sessionId"            type="UUIDType"/>
+        <xs:element name="crmMasterId"          type="UUIDType"/>
+        <xs:element name="currentRegistrations" type="xs:nonNegativeInteger"/>
+        <xs:element name="capacity"             type="PositiveIntType"/>
+        <xs:element name="registrationTime"     type="ISO8601DateTimeType"/>
+        <xs:element name="timestamp"            type="ISO8601DateTimeType"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       PLANNING → CRM (user sync)
+       Contract 21 — planning.user.created → CRM via user.topic
+  ══════════════════════════════════════════════════════════════════ -->
+
+  <xs:element name="PlanningUserCreated">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="id"          type="UUIDType"/>
+        <xs:element name="email"       type="EmailType"/>
+        <xs:element name="firstName"   type="xs:string"/>
+        <xs:element name="lastName"    type="xs:string"/>
+        <xs:element name="role"        type="PlanningUserRoleType"/>
+        <xs:element name="gdprConsent" type="xs:boolean"/>
+        <xs:element name="phoneNumber" type="xs:string" minOccurs="0"/>
+        <xs:element name="company"     type="xs:string" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       PLANNING → CRM (user sync)
+       Contract 22 — planning.user.updated → CRM via user.topic
+  ══════════════════════════════════════════════════════════════════ -->
+
+  <xs:element name="PlanningUserUpdated">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="id"          type="UUIDType"/>
+        <xs:element name="email"       type="EmailType"/>
+        <xs:element name="firstName"   type="xs:string"/>
+        <xs:element name="lastName"    type="xs:string"/>
+        <xs:element name="role"        type="PlanningUserRoleType"/>
+        <xs:element name="gdprConsent" type="xs:boolean"/>
+        <xs:element name="phoneNumber" type="xs:string" minOccurs="0"/>
+        <xs:element name="company"     type="xs:string" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       PLANNING → CRM (user sync)
+       Contract 23 — planning.user.deactivated → CRM via user.topic
+  ══════════════════════════════════════════════════════════════════ -->
+
+  <xs:element name="PlanningUserDeactivated">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="id"            type="UUIDType"/>
+        <xs:element name="email"         type="EmailType"/>
+        <xs:element name="deactivatedAt" type="ISO8601DateTimeType"/>
       </xs:sequence>
     </xs:complexType>
   </xs:element>
@@ -391,28 +428,4 @@
     </xs:complexType>
   </xs:element>
 
-  <!-- ══════════════════════════════════════════════════════════════════
-       PLANNING → CRM (CRM verwacht deze exacte naam)
-       Contract 11 — planning.session.updated → CRM
-  ══════════════════════════════════════════════════════════════════ -->
-
-  <xs:element name="SessionUpdate">
-    <xs:complexType>
-      <xs:sequence>
-        <xs:element name="sessionId"   type="xs:string"/>
-        <xs:element name="sessionName" type="xs:string"/>
-        <xs:element name="newTime"     type="ISO8601DateTimeType" minOccurs="0"/>
-        <xs:element name="newLocation" type="xs:string"           minOccurs="0"/>
-        <xs:element name="changeType">
-          <xs:simpleType>
-            <xs:restriction base="xs:string">
-              <xs:enumeration value="rescheduled"/>
-              <xs:enumeration value="cancelled"/>
-              <xs:enumeration value="updated"/>
-            </xs:restriction>
-          </xs:simpleType>
-        </xs:element>
-      </xs:sequence>
-    </xs:complexType>
-  </xs:element>
-
+</xs:schema>
