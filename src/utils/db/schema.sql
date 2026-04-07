@@ -66,3 +66,8 @@ CREATE TABLE IF NOT EXISTS "SessionChangeLog" (
     "changedAt"    TIMESTAMP    NOT NULL DEFAULT NOW(),
     "changedBy"    VARCHAR(255)
 );
+
+CREATE TABLE IF NOT EXISTS "ProcessedMessages" (
+  "messageId"   VARCHAR(255) PRIMARY KEY,
+  "processedAt" TIMESTAMP    NOT NULL DEFAULT NOW()
+);
