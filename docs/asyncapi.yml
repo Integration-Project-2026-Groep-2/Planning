@@ -2,7 +2,7 @@ asyncapi: 3.1.0
 
 info:
   title: Planning Service
-  version: 1.5.0
+  version: 1.6.0
   description: |
     AsyncAPI documentatie voor de Planning Service — Integratieproject 2026 Groep 2.
     De Planning Service beheert sessies, locaties, sprekers en inschrijvingen voor events.
@@ -20,15 +20,11 @@ servers:
     security:
       - $ref: '#/components/securitySchemes/rabbitmqAuth'
 
-# ══════════════════════════════════════════════════════════════════════
-# CHANNELS — één channel per queue/exchange
-# ══════════════════════════════════════════════════════════════════════
-
 channels:
 
   # ── PLANNING → CONTROL ROOM ─────────────────────────────────────────
   planning.heartbeat:
-    address: planning.heartbeat
+    address: routing.heartbeat
     description: |
       Heartbeat van de Planning Service — elke seconde verstuurd.
       Control Room gebruikt dit om de status van de service te monitoren.
@@ -43,11 +39,12 @@ channels:
           type: direct
           durable: true
 
+  # ── PLANNING → ALLE TEAMS via planning.topic ─────────────────────────
   planning.session.created:
     address: planning.session.created
     description: |
       Verstuurd wanneer een nieuwe sessie aangemaakt wordt.
-      Frontend toont de sessie op de website, Control Room updatet het dashboard.
+      Frontend en Control Room ontvangen dit event.
     messages:
       SessionCreatedMessage:
         $ref: '#/components/messages/SessionCreated'
@@ -55,27 +52,23 @@ channels:
       amqp:
         is: routingKey
         exchange:
-          name: planning.session.created
-          type: fanout
+          name: planning.topic
+          type: topic
           durable: true
 
   planning.session.updated:
     address: planning.session.updated
     description: |
-      Verstuurd wanneer een sessie gewijzigd wordt (titel, locatie, capaciteit).
-      CRM, Frontend en Mailing ontvangen dit event.
-      Naar CRM: root element is SessionUpdate (contract 11).
-      Naar Frontend/Mailing: root element is SessionUpdated (contracts 4, 8).
+      Verstuurd wanneer een sessie gewijzigd wordt.
+      CRM, Frontend en Mailing ontvangen dit event via planning.topic.
     messages:
       SessionUpdatedMessage:
         $ref: '#/components/messages/SessionUpdated'
-      SessionUpdateCrmMessage:
-        $ref: '#/components/messages/SessionUpdate'
     bindings:
       amqp:
         is: routingKey
         exchange:
-          name: planning.session.updated
+          name: planning.topic
           type: topic
           durable: true
 
@@ -83,7 +76,7 @@ channels:
     address: planning.session.cancelled
     description: |
       Verstuurd wanneer een sessie geannuleerd wordt.
-      Frontend verbergt de sessie, Mailing stuurt annuleringsmail, Control Room updatet.
+      Frontend, Mailing en Control Room ontvangen dit event.
     messages:
       SessionCancelledMessage:
         $ref: '#/components/messages/SessionCancelled'
@@ -91,15 +84,15 @@ channels:
       amqp:
         is: routingKey
         exchange:
-          name: planning.session.cancelled
-          type: fanout
+          name: planning.topic
+          type: topic
           durable: true
 
   planning.session.rescheduled:
     address: planning.session.rescheduled
     description: |
       Verstuurd wanneer een sessie verzet wordt naar een ander tijdslot.
-      Bevat altijd old én new tijdslot. SessionChangeLog wordt aangemaakt voor dit event.
+      Bevat altijd old én new tijdslot. SessionChangeLog wordt aangemaakt.
     messages:
       SessionRescheduledMessage:
         $ref: '#/components/messages/SessionRescheduled'
@@ -107,15 +100,15 @@ channels:
       amqp:
         is: routingKey
         exchange:
-          name: planning.session.rescheduled
-          type: fanout
+          name: planning.topic
+          type: topic
           durable: true
 
   planning.session.full:
     address: planning.session.full
     description: |
       Verstuurd wanneer een sessie volzet is.
-      Frontend toont 'volzet', Mailing plaatst deelnemer op wachtlijst.
+      Frontend en Mailing ontvangen dit event.
     messages:
       SessionFullMessage:
         $ref: '#/components/messages/SessionFull'
@@ -123,8 +116,8 @@ channels:
       amqp:
         is: routingKey
         exchange:
-          name: planning.session.full
-          type: fanout
+          name: planning.topic
+          type: topic
           durable: true
 
   planning.session.error:
@@ -139,8 +132,8 @@ channels:
       amqp:
         is: routingKey
         exchange:
-          name: planning.session.error
-          type: fanout
+          name: planning.topic
+          type: topic
           durable: true
 
   planning.participant.registered:
@@ -155,11 +148,60 @@ channels:
       amqp:
         is: routingKey
         exchange:
-          name: planning.participant.registered
-          type: fanout
+          name: planning.topic
+          type: topic
           durable: true
 
-  # ── CRM → PLANNING ──────────────────────────────────────────────────
+  # ── PLANNING → CRM (user sync via user.topic) ───────────────────────
+  planning.user.created:
+    address: planning.user.created
+    description: |
+      Verstuurd wanneer een spreker aangemaakt wordt in Planning.
+      CRM maakt een Contact aan in Salesforce en stuurt crm.user.confirmed terug.
+    messages:
+      PlanningUserCreatedMessage:
+        $ref: '#/components/messages/PlanningUserCreated'
+    bindings:
+      amqp:
+        is: routingKey
+        exchange:
+          name: user.topic
+          type: topic
+          durable: true
+
+  planning.user.updated:
+    address: planning.user.updated
+    description: |
+      Verstuurd wanneer een spreker gewijzigd wordt in Planning.
+      CRM updatet het Contact in Salesforce.
+    messages:
+      PlanningUserUpdatedMessage:
+        $ref: '#/components/messages/PlanningUserUpdated'
+    bindings:
+      amqp:
+        is: routingKey
+        exchange:
+          name: user.topic
+          type: topic
+          durable: true
+
+  planning.user.deactivated:
+    address: planning.user.deactivated
+    description: |
+      Verstuurd wanneer een spreker gedeactiveerd wordt in Planning.
+      CRM zet isActive op false in Salesforce.
+    messages:
+      PlanningUserDeactivatedMessage:
+        $ref: '#/components/messages/PlanningUserDeactivated'
+    bindings:
+      amqp:
+        is: routingKey
+        exchange:
+          name: user.topic
+          type: topic
+          durable: true
+
+  # ── CRM → PLANNING (via contact.topic) ──────────────────────────────
   crm.user.confirmed:
     address: crm.user.confirmed
     description: |
@@ -181,7 +223,7 @@ channels:
     address: crm.user.updated
     description: |
       Planning luistert op deze queue.
-      Als role=SPEAKER → Speaker tabel bijwerken op basis van id (crmMasterID).
+      Als role=SPEAKER → Speaker tabel bijwerken op basis van crmMasterId.
     messages:
       UserUpdatedMessage:
         $ref: '#/components/messages/UserUpdated'
@@ -253,10 +295,6 @@ channels:
           type: topic
           durable: true
 
-# ══════════════════════════════════════════════════════════════════════
-# OPERATIONS — wie verstuurt, wie ontvangt
-# ══════════════════════════════════════════════════════════════════════
-
 operations:
 
   # ── PLANNING verstuurt ───────────────────────────────────────────────
@@ -279,7 +317,7 @@ operations:
     action: send
     channel:
       $ref: '#/channels/planning.session.updated'
-    summary: Planning verstuurt SessionUpdated naar CRM, Frontend en Mailing
+    summary: Planning verstuurt SessionUpdated naar CRM, Frontend en Mailing via planning.topic
 
   sendSessionCancelled:
     action: send
@@ -310,6 +348,24 @@ operations:
     channel:
       $ref: '#/channels/planning.participant.registered'
     summary: Planning verstuurt ParticipantRegistered naar Control Room
+
+  sendPlanningUserCreated:
+    action: send
+    channel:
+      $ref: '#/channels/planning.user.created'
+    summary: Planning verstuurt PlanningUserCreated naar CRM wanneer een spreker aangemaakt wordt
+
+  sendPlanningUserUpdated:
+    action: send
+    channel:
+      $ref: '#/channels/planning.user.updated'
+    summary: Planning verstuurt PlanningUserUpdated naar CRM wanneer een spreker gewijzigd wordt
+
+  sendPlanningUserDeactivated:
+    action: send
+    channel:
+      $ref: '#/channels/planning.user.deactivated'
+    summary: Planning verstuurt PlanningUserDeactivated naar CRM wanneer een spreker gedeactiveerd wordt
 
   # ── PLANNING ontvangt ────────────────────────────────────────────────
   receiveUserConfirmed:
@@ -348,10 +404,6 @@ operations:
       $ref: '#/channels/crm.company.deactivated'
     summary: Planning ontvangt CompanyDeactivated van CRM — bedrijf deactiveren
 
-# ══════════════════════════════════════════════════════════════════════
-# COMPONENTS
-# ══════════════════════════════════════════════════════════════════════
-
 components:
 
   securitySchemes:
@@ -380,18 +432,10 @@ components:
     SessionUpdated:
       name: SessionUpdated
       title: SessionUpdated
-      summary: Sessie gewijzigd naar Frontend en Mailing — contracts 4 en 8
+      summary: Sessie gewijzigd — contracts 1, 4 en 8
       contentType: application/xml
       payload:
         $ref: '#/components/schemas/SessionUpdated'
-
-    SessionUpdate:
-      name: SessionUpdate
-      title: SessionUpdate
-      summary: Sessie gewijzigd naar CRM — contract 11
-      contentType: application/xml
-      payload:
-        $ref: '#/components/schemas/SessionUpdate'
 
     SessionCancelled:
       name: SessionCancelled
@@ -432,6 +476,30 @@ components:
       contentType: application/xml
       payload:
         $ref: '#/components/schemas/ParticipantRegistered'
+
+    PlanningUserCreated:
+      name: PlanningUserCreated
+      title: PlanningUserCreated
+      summary: Spreker aangemaakt in Planning — contract 21
+      contentType: application/xml
+      payload:
+        $ref: '#/components/schemas/PlanningUserCreated'
+
+    PlanningUserUpdated:
+      name: PlanningUserUpdated
+      title: PlanningUserUpdated
+      summary: Spreker gewijzigd in Planning — contract 22
+      contentType: application/xml
+      payload:
+        $ref: '#/components/schemas/PlanningUserUpdated'
+
+    PlanningUserDeactivated:
+      name: PlanningUserDeactivated
+      title: PlanningUserDeactivated
+      summary: Spreker gedeactiveerd in Planning — contract 23
+      contentType: application/xml
+      payload:
+        $ref: '#/components/schemas/PlanningUserDeactivated'
 
     UserConfirmed:
       name: UserConfirmed
@@ -526,25 +594,22 @@ components:
 
     SessionUpdated:
       type: object
-      required: [sessionId, changeType, timestamp]
+      required: [sessionId, sessionName, changeType, timestamp]
       properties:
         sessionId:
           type: string
           format: uuid
+        sessionName:
+          type: string
         changeType:
           type: string
-          enum: [TITLE_CHANGED, LOCATION_CHANGED, TIME_CHANGED, CAPACITY_CHANGED, SPEAKER_CHANGED]
+          enum: [rescheduled, cancelled, updated]
         newTime:
           type: string
           format: date-time
         newLocation:
           type: string
-        newTitle:
-          type: string
-        newCapacity:
-          type: integer
-          minimum: 1
-        ingeschrevenDeelnemers:
+        participantIds:
           type: array
           items:
             type: string
@@ -552,23 +617,6 @@ components:
         timestamp:
           type: string
           format: date-time
-
-    SessionUpdate:
-      type: object
-      required: [sessionId, sessionName, changeType]
-      properties:
-        sessionId:
-          type: string
-        sessionName:
-          type: string
-        newTime:
-          type: string
-          format: date-time
-        newLocation:
-          type: string
-        changeType:
-          type: string
-          enum: [rescheduled, cancelled, updated]
 
     SessionCancelled:
       type: object
@@ -582,7 +630,7 @@ components:
           const: cancelled
         reason:
           type: string
-        ingeschrevenDeelnemers:
+        participantIds:
           type: array
           items:
             type: string
@@ -620,7 +668,7 @@ components:
           type: string
         reason:
           type: string
-        ingeschrevenDeelnemers:
+        participantIds:
           type: array
           items:
             type: string
@@ -688,6 +736,68 @@ components:
           type: string
           format: date-time
         timestamp:
+          type: string
+          format: date-time
+
+    PlanningUserCreated:
+      type: object
+      required: [id, email, firstName, lastName, role, gdprConsent]
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+        lastName:
+          type: string
+        role:
+          type: string
+          enum: [SPEAKER, VISITOR]
+        gdprConsent:
+          type: boolean
+        phoneNumber:
+          type: string
+        company:
+          type: string
+
+    PlanningUserUpdated:
+      type: object
+      required: [id, email, firstName, lastName, role, gdprConsent]
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+        lastName:
+          type: string
+        role:
+          type: string
+          enum: [SPEAKER, VISITOR]
+        gdprConsent:
+          type: boolean
+        phoneNumber:
+          type: string
+        company:
+          type: string
+
+    PlanningUserDeactivated:
+      type: object
+      required: [id, email, deactivatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        deactivatedAt:
           type: string
           format: date-time
 
