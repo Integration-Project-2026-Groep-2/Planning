@@ -4,11 +4,11 @@
 
 Alle berichten worden verstuurd via RabbitMQ exchanges:
 
-- content_type: application/xml
-- encoding: UTF-8
-- datum formaat: YYYY-MM-DD
-- tijd formaat: HH:mm:ss
-- datetime formaat: ISO 8601
+- content_type: application/xml  
+- encoding: UTF-8  
+- datum formaat: YYYY-MM-DD  
+- tijd formaat: HH:mm:ss  
+- datetime formaat: ISO 8601  
 
 ---
 
@@ -20,6 +20,11 @@ De Planning Service gebruikt exchange-based messaging:
 - Andere systemen binden hun eigen queue
 - Planning weet niet wie luistert → loosely coupled
 
+Dit zorgt voor:
+- schaalbaarheid  
+- fouttolerantie  
+- flexibiliteit tussen systemen  
+
 ---
 
 ## Validatie (producers)
@@ -28,9 +33,8 @@ Voor elk uitgaand bericht:
 
 - XML wordt gevalideerd met `xml.validator`
 - bij fout:
-  - error wordt gelogd met Pino
-  - bericht wordt NIET verstuurd
-  - `sendSessionError` wordt aangeroepen naar Control Room
+  - error wordt gelogd  
+  - bericht wordt NIET verstuurd  
   - bericht wordt naar DLQ gestuurd via `sendToDlq`
 
 ---
@@ -39,16 +43,26 @@ Voor elk uitgaand bericht:
 
 Bij een fout in een producer of consumer:
 
-- `src/producers/session.error.producer.ts` → verstuurt `<SessionError>` naar Control Room via `planning.topic`
-- `src/utils/dlq.ts` → stuurt ongeldig bericht naar `planning.dlq` queue
+- Ongeldige berichten worden naar `planning.dlq` gestuurd
+- Errors worden gelogd
+- Consumer blijft draaien (geen crash)
+
+---
 
 ## Idempotency
 
 Dubbele berichten worden herkend en genegeerd:
 
-- `src/utils/idempotency.ts` → checkt via `ProcessedMessages` tabel in de database
-- Bij ontvangst: check of `messageId` al verwerkt is
-- Na verwerking: sla `messageId` op in `ProcessedMessages`
+- `src/utils/idempotency.ts` controleert via `ProcessedMessages`
+- Bij ontvangst:
+  - check of `messageId` al verwerkt is
+- Na verwerking:
+  - `messageId` wordt opgeslagen
+
+Dit voorkomt:
+- dubbele inserts  
+- dubbele updates  
+- inconsistente data  
 
 ---
 
@@ -56,203 +70,148 @@ Dubbele berichten worden herkend en genegeerd:
 
 ## planning.heartbeat
 
-Exchange: heartbeat.direct (direct)
-Routing key: routing.heartbeat
+Exchange: heartbeat.direct (direct)  
+Routing key: routing.heartbeat  
 
-Root element: Heartbeat
+Root element: Heartbeat  
 
 Velden:
 - serviceId (planning)
-- timestamp
+- timestamp  
 
 ---
 
 ## planning.session.created
 
-Exchange: planning.topic (topic)
-Routing key: planning.session.created
+Exchange: planning.topic (topic)  
+Routing key: planning.session.created  
 
-Root element: SessionCreated
+Root element: SessionCreated  
 
 Velden:
-- sessionId
-- title
-- date
-- startTime
-- endTime
-- location
-- status
-- capacity
-- timestamp
+- sessionId  
+- title  
+- date  
+- startTime  
+- endTime  
+- location  
+- status  
+- capacity  
+- timestamp  
 
-Ontvangers: Frontend, Control Room
+Ontvangers:
+- Frontend  
+- Control Room  
 
 ---
 
 ## planning.session.updated
 
-Exchange: planning.topic (topic)
-Routing key: planning.session.updated
+Exchange: planning.topic (topic)  
+Routing key: planning.session.updated  
 
-Root element: SessionUpdated
+Root element: SessionUpdated  
 
 Velden:
-- sessionId (verplicht)
-- sessionName (verplicht)
-- changeType: rescheduled | cancelled | updated (verplicht)
-- newTime (optioneel)
-- newLocation (optioneel)
-- participantIds[] (optioneel)
-- timestamp (verplicht)
+- sessionId (verplicht)  
+- sessionName (verplicht)  
+- changeType: rescheduled | cancelled | updated  
+- newTime (optioneel)  
+- newLocation (optioneel)  
+- participantIds[] (optioneel)  
+- timestamp (verplicht)  
 
-Ontvangers: CRM, Frontend, Mailing
+Ontvangers:
+- CRM  
+- Frontend  
+- Mailing  
 
 ---
 
 ## planning.session.cancelled
 
-Exchange: planning.topic (topic)
-Routing key: planning.session.cancelled
+Exchange: planning.topic (topic)  
+Routing key: planning.session.cancelled  
 
-Root element: SessionCancelled
+Root element: SessionCancelled  
 
 Velden:
-- sessionId
-- status (cancelled)
-- reason (optioneel)
-- participantIds[] (optioneel)
-- timestamp
+- sessionId  
+- status (cancelled)  
+- reason (optioneel)  
+- participantIds[] (optioneel)  
+- timestamp  
 
-Ontvangers: Frontend, Mailing, Control Room
+Ontvangers:
+- Frontend  
+- Mailing  
+- Control Room  
 
 ---
 
 ## planning.session.rescheduled
 
-Exchange: planning.topic (topic)
-Routing key: planning.session.rescheduled
+Exchange: planning.topic (topic)  
+Routing key: planning.session.rescheduled  
 
-Root element: SessionRescheduled
+Root element: SessionRescheduled  
 
 Velden:
-- sessionId
-- oldDate
-- oldStartTime
-- oldEndTime
-- newDate
-- newStartTime
-- newEndTime
-- newLocation (optioneel)
-- reason (optioneel)
-- participantIds[] (optioneel)
-- timestamp
+- sessionId  
+- oldDate  
+- oldStartTime  
+- oldEndTime  
+- newDate  
+- newStartTime  
+- newEndTime  
+- newLocation (optioneel)  
+- reason (optioneel)  
+- participantIds[] (optioneel)  
+- timestamp  
 
-Ontvangers: Frontend, Mailing
+Ontvangers:
+- Frontend  
+- Mailing  
 
 ---
 
 ## planning.session.full
 
-Exchange: planning.topic (topic)
-Routing key: planning.session.full
+Exchange: planning.topic (topic)  
+Routing key: planning.session.full  
 
-Root element: SessionFull
-
-Velden:
-- sessionId
-- currentRegistrations
-- capacity
-- crmMasterId (optioneel)
-- timestamp
-
-Ontvangers: Frontend, Mailing
-
----
-
-## planning.session.error
-
-Exchange: planning.topic (topic)
-Routing key: planning.session.error
-
-Root element: SessionError
+Root element: SessionFull  
 
 Velden:
-- errorType (VALIDATION_ERROR | OUTLOOK_SYNC_FAILED | DATABASE_ERROR | RABBITMQ_ERROR | CONFLICT_ERROR | NOT_FOUND | IDEMPOTENCY_VIOLATION | UNKNOWN_ERROR)
-- message
-- sessionId (optioneel)
-- service (planning)
-- timestamp
+- sessionId  
+- currentRegistrations  
+- capacity  
+- crmMasterId (optioneel)  
+- timestamp  
 
-Ontvangers: Control Room
+Ontvangers:
+- Frontend  
+- Mailing  
 
 ---
 
 ## planning.participant.registered
 
-Exchange: planning.topic (topic)
-Routing key: planning.participant.registered
+Exchange: planning.topic (topic)  
+Routing key: planning.participant.registered  
 
-Root element: ParticipantRegistered
-
-Velden:
-- sessionId
-- crmMasterId
-- currentRegistrations
-- capacity
-- registrationTime
-- timestamp
-
-Ontvangers: Control Room
-
----
-
-## planning.user.created
-
-Exchange: user.topic (topic)
-Routing key: planning.user.created
-
-Root element: PlanningUserCreated
+Root element: ParticipantRegistered  
 
 Velden:
-- id (verplicht)
-- email (verplicht)
-- firstName (verplicht)
-- lastName (verplicht)
-- role: SPEAKER | VISITOR (verplicht)
-- gdprConsent (verplicht)
-- phoneNumber (optioneel)
-- company (optioneel)
+- sessionId  
+- crmMasterId  
+- currentRegistrations  
+- capacity  
+- registrationTime  
+- timestamp  
 
-Ontvangers: CRM
-
----
-
-## planning.user.updated
-
-Exchange: user.topic (topic)
-Routing key: planning.user.updated
-
-Root element: PlanningUserUpdated
-
-Velden: zelfde als PlanningUserCreated
-
-Ontvangers: CRM
-
----
-
-## planning.user.deactivated
-
-Exchange: user.topic (topic)
-Routing key: planning.user.deactivated
-
-Root element: PlanningUserDeactivated
-
-Velden:
-- id
-- email
-- deactivatedAt
-
-Ontvangers: CRM
+Ontvangers:
+- Control Room  
 
 ---
 
@@ -264,83 +223,87 @@ Alle CRM events via exchange: contact.topic (topic)
 
 ## crm.user.confirmed
 
-Routing key: crm.user.confirmed
-Root element: UserConfirmed
+Routing key: crm.user.confirmed  
+Root element: UserConfirmed  
 
 Gedrag:
-- role = SPEAKER → insert in Speaker tabel
-- anders → opslaan als Participant referentie
-- idempotency check via ProcessedMessages
-- bij validatiefout → DLQ + SessionError
+- role = SPEAKER → insert in Speaker tabel  
+- anders → genegeerd  
+- idempotency check  
+- bij fout → DLQ  
 
 ---
 
 ## crm.user.updated
 
-Routing key: crm.user.updated
-Root element: UserUpdated
+Routing key: crm.user.updated  
+Root element: UserUpdated  
 
 Gedrag:
-- update Speaker via crmMasterId
-- idempotency check via ProcessedMessages
-- bij validatiefout → DLQ + SessionError
+- update Speaker via crmMasterId  
+- idempotency check  
+- bij fout → DLQ  
 
 ---
 
 ## crm.user.deactivated
 
-Routing key: crm.user.deactivated
-Root element: UserDeactivated
+Routing key: crm.user.deactivated  
+Root element: UserDeactivated  
 
 Gedrag:
-- zet isActive = false in Speaker tabel
-- idempotency check via ProcessedMessages
-- bij validatiefout → DLQ + SessionError
+- zet isActive = false  
+- idempotency check  
+- bij fout → DLQ  
 
 ---
 
 ## crm.company.confirmed
 
-Routing key: crm.company.confirmed
-Root element: CompanyConfirmed
+Routing key: crm.company.confirmed  
+Root element: CompanyConfirmed  
 
 Gedrag:
-- bedrijfsnaam opslaan als referentie
-- idempotency check via ProcessedMessages
+- company opslaan bij Speaker  
+- idempotency check  
+- bij fout → DLQ  
 
 ---
 
 ## crm.company.updated
 
-Routing key: crm.company.updated
-Root element: CompanyUpdated
+Routing key: crm.company.updated  
+Root element: CompanyUpdated  
 
 Gedrag:
-- bedrijfsdata bijwerken
-- idempotency check via ProcessedMessages
+- update company gegevens  
+- idempotency check  
+- bij fout → DLQ  
 
 ---
 
 ## crm.company.deactivated
 
-Routing key: crm.company.deactivated
-Root element: CompanyDeactivated
+Routing key: crm.company.deactivated  
+Root element: CompanyDeactivated  
 
 Gedrag:
-- bedrijf deactiveren
-- controleer of gekoppeld aan toekomstige sessies
-- idempotency check via ProcessedMessages
+- zet gekoppelde speakers op inactive  
+- controle op toekomstige sessies  
+- idempotency check  
+- bij fout → DLQ  
 
 ---
 
 # XML conventie
 
-- Root = PascalCase
-- Velden = lowerCamelCase
+- Root = PascalCase  
+- Velden = lowerCamelCase  
 
 ---
 
 ## Voorbeeld
+
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <SessionCreated>
@@ -354,4 +317,3 @@ Gedrag:
   <status>concept</status>
   <timestamp>2026-03-30T12:00:00Z</timestamp>
 </SessionCreated>
-```

@@ -12,7 +12,7 @@ type SessionRescheduledPayload = {
   newEndTime: string;
   newLocation?: string;
   reason?: string;
-  ingeschrevenDeelnemers?: string[];
+  participantIds?: string[];
   timestamp?: string;
 };
 
@@ -21,9 +21,10 @@ export const sendSessionRescheduled = async (
 ) => {
   try {
     const channel = getChannel();
-    const exchangeName = 'planning.session.rescheduled';
+    const exchangeName = 'planning.topic';
+    const routingKey = 'planning.session.rescheduled';
 
-    await channel.assertExchange(exchangeName, 'fanout', { durable: true });
+    await channel.assertExchange(exchangeName, 'topic', { durable: true });
 
     const xml = buildXml('SessionRescheduled', {
       sessionId: payload.sessionId,
@@ -35,8 +36,8 @@ export const sendSessionRescheduled = async (
       newEndTime: payload.newEndTime,
       newLocation: payload.newLocation,
       reason: payload.reason,
-      ingeschrevenDeelnemers: payload.ingeschrevenDeelnemers?.length
-        ? { crmMasterId: payload.ingeschrevenDeelnemers }
+      participantIds: payload.participantIds?.length
+        ? { participantId: payload.participantIds }
         : undefined,
       timestamp: payload.timestamp ?? new Date().toISOString(),
     });
@@ -47,7 +48,7 @@ export const sendSessionRescheduled = async (
       return;
     }
 
-    channel.publish(exchangeName, '', Buffer.from(xml), {
+    channel.publish(exchangeName, routingKey, Buffer.from(xml), {
       contentType: 'application/xml',
       persistent: true,
     });

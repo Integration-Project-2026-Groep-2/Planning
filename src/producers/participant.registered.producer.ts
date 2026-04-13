@@ -16,9 +16,10 @@ export const sendParticipantRegistered = async (
 ) => {
   try {
     const channel = getChannel();
-    const exchangeName = 'planning.participant.registered';
+    const exchangeName = 'planning.topic';
+    const routingKey = 'planning.participant.registered';
 
-    await channel.assertExchange(exchangeName, 'fanout', { durable: true });
+    await channel.assertExchange(exchangeName, 'topic', { durable: true });
 
     const xml = buildXml('ParticipantRegistered', {
       sessionId: payload.sessionId,
@@ -35,7 +36,7 @@ export const sendParticipantRegistered = async (
       return;
     }
 
-    channel.publish(exchangeName, '', Buffer.from(xml), {
+    channel.publish(exchangeName, routingKey, Buffer.from(xml), {
       contentType: 'application/xml',
       persistent: true,
     });

@@ -2,6 +2,9 @@ import { getChannel } from '../rabbitmq';
 import { parseXml } from '../utils/xml.parser';
 import { z } from 'zod';
 import { query } from '../db';
+import { isAlreadyProcessed, markAsProcessed } from '../utils/idempotency';
+import { sendToDlq } from '../utils/dlq';
+import crypto from 'crypto';
 
 const toBoolean = (value: unknown) => {
   if (value === 'true') return true;
@@ -34,22 +37,21 @@ export const startUserConfirmedConsumer = async () => {
   channel.consume(queue, async (msg) => {
     if (!msg) return;
 
+    const xml = msg.content.toString();
+    const messageId = msg.properties.messageId || crypto.randomUUID();
+
     try {
-      const xml = msg.content.toString();
-      const data = await parseXml(xml, 'UserConfirmed');
-
-      const parsed = schema.safeParse(data);
-
-      if (!parsed.success) {
-        console.error('[CRM] Zod validatie mislukt:', parsed.error.flatten());
+      const alreadyProcessed = await isAlreadyProcessed(messageId);
+      if (alreadyProcessed) {
         channel.ack(msg);
         return;
       }
 
-      const user = parsed.data;
+      const data = await parseXml(xml, 'UserConfirmed');
+      const user = schema.parse(data);
 
       if (user.role !== 'SPEAKER') {
-        console.log('[CRM] Geen speaker → genegeerd');
+        await markAsProcessed(messageId);
         channel.ack(msg);
         return;
       }
@@ -63,7 +65,7 @@ export const startUserConfirmedConsumer = async () => {
       );
 
       if (existingSpeaker.rowCount && existingSpeaker.rowCount > 0) {
-        console.log('[CRM] Speaker bestaat al → geen insert');
+        await markAsProcessed(messageId);
         channel.ack(msg);
         return;
       }
@@ -82,10 +84,17 @@ export const startUserConfirmedConsumer = async () => {
         ]
       );
 
+      await markAsProcessed(messageId);
       console.log('[CRM] Speaker aangemaakt');
       channel.ack(msg);
     } catch (err) {
-      console.error('[CRM] Fout:', err);
+      console.error('[CRM] Fout in crm.user.confirmed:', err);
+
+      await sendToDlq(
+        xml,
+        err instanceof Error ? err.message : 'Unknown error'
+      );
+
       channel.ack(msg);
     }
   });

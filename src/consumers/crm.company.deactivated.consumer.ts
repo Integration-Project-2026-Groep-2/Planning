@@ -2,6 +2,9 @@ import { getChannel } from '../rabbitmq';
 import { z } from 'zod';
 import { query } from '../db';
 import { parseXml } from '../utils/xml.parser';
+import { isAlreadyProcessed, markAsProcessed } from '../utils/idempotency';
+import { sendToDlq } from '../utils/dlq';
+import crypto from 'crypto';
 
 const schema = z.object({
   id: z.string().uuid(),
@@ -14,37 +17,27 @@ export const startCompanyDeactivatedConsumer = async () => {
 
   const exchange = 'contact.topic';
   const queue = 'crm.company.deactivated';
-  const dlq = 'crm.company.deactivated.dlq';
 
   await channel.assertExchange(exchange, 'topic', { durable: true });
   await channel.assertQueue(queue, { durable: true });
-  await channel.assertQueue(dlq, { durable: true });
 
   await channel.bindQueue(queue, exchange, 'crm.company.deactivated');
 
   channel.consume(queue, async (msg) => {
     if (!msg) return;
 
+    const xml = msg.content.toString();
+    const messageId = msg.properties.messageId || crypto.randomUUID();
+
     try {
-      const xml = msg.content.toString();
-      const data = await parseXml(xml, 'CompanyDeactivated');
-
-      const parsed = schema.safeParse(data);
-
-      if (!parsed.success) {
-        console.error(
-          '[CRM] Zod validatie mislukt in crm.company.deactivated:',
-          parsed.error.flatten()
-        );
-        channel.sendToQueue(dlq, Buffer.from(xml), {
-          contentType: 'application/xml',
-          persistent: true,
-        });
+      const alreadyProcessed = await isAlreadyProcessed(messageId);
+      if (alreadyProcessed) {
         channel.ack(msg);
         return;
       }
 
-      const company = parsed.data;
+      const data = await parseXml(xml, 'CompanyDeactivated');
+      const company = schema.parse(data);
 
       const speakerResult = await query(
         `SELECT "company"
@@ -90,13 +83,20 @@ export const startCompanyDeactivatedConsumer = async () => {
         );
       }
 
+      await markAsProcessed(messageId);
       console.log(
         '[CRM] Company gedeactiveerd → gekoppelde speakers uitgeschakeld'
       );
       channel.ack(msg);
     } catch (err) {
       console.error('[CRM] Fout in crm.company.deactivated:', err);
-      channel.nack(msg, false, false);
+
+      await sendToDlq(
+        xml,
+        err instanceof Error ? err.message : 'Unknown error'
+      );
+
+      channel.ack(msg);
     }
   });
 };
