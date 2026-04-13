@@ -2,6 +2,9 @@ import { getChannel } from '../rabbitmq';
 import { z } from 'zod';
 import { query } from '../db';
 import { parseXml } from '../utils/xml.parser';
+import { isAlreadyProcessed, markAsProcessed } from '../utils/idempotency';
+import { sendToDlq } from '../utils/dlq';
+import crypto from 'crypto';
 
 const toBoolean = (value: unknown) => {
   if (value === 'true') return true;
@@ -29,37 +32,27 @@ export const startCompanyUpdatedConsumer = async () => {
 
   const exchange = 'contact.topic';
   const queue = 'crm.company.updated';
-  const dlq = 'crm.company.updated.dlq';
 
   await channel.assertExchange(exchange, 'topic', { durable: true });
   await channel.assertQueue(queue, { durable: true });
-  await channel.assertQueue(dlq, { durable: true });
 
   await channel.bindQueue(queue, exchange, 'crm.company.updated');
 
   channel.consume(queue, async (msg) => {
     if (!msg) return;
 
+    const xml = msg.content.toString();
+    const messageId = msg.properties.messageId || crypto.randomUUID();
+
     try {
-      const xml = msg.content.toString();
-      const data = await parseXml(xml, 'CompanyUpdated');
-
-      const parsed = schema.safeParse(data);
-
-      if (!parsed.success) {
-        console.error(
-          '[CRM] Zod validatie mislukt in crm.company.updated:',
-          parsed.error.flatten()
-        );
-        channel.sendToQueue(dlq, Buffer.from(xml), {
-          contentType: 'application/xml',
-          persistent: true,
-        });
+      const alreadyProcessed = await isAlreadyProcessed(messageId);
+      if (alreadyProcessed) {
         channel.ack(msg);
         return;
       }
 
-      const company = parsed.data;
+      const data = await parseXml(xml, 'CompanyUpdated');
+      const company = schema.parse(data);
 
       await query(
         `UPDATE "Speaker"
@@ -69,11 +62,18 @@ export const startCompanyUpdatedConsumer = async () => {
         [company.name, company.isActive, company.id]
       );
 
+      await markAsProcessed(messageId);
       console.log('[CRM] Company geüpdatet in Speaker');
       channel.ack(msg);
     } catch (err) {
       console.error('[CRM] Fout in crm.company.updated:', err);
-      channel.nack(msg, false, false);
+
+      await sendToDlq(
+        xml,
+        err instanceof Error ? err.message : 'Unknown error'
+      );
+
+      channel.ack(msg);
     }
   });
 };
