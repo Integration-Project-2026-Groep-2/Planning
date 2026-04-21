@@ -741,7 +741,7 @@ components:
 
     PlanningUserCreated:
       type: object
-      required: [id, email, firstName, lastName, role, gdprConsent]
+      required: [id, email, firstName, lastName, role, isActive]
       properties:
         id:
           type: string
@@ -756,7 +756,7 @@ components:
         role:
           type: string
           enum: [SPEAKER, VISITOR]
-        gdprConsent:
+        isActive:
           type: boolean
         phoneNumber:
           type: string
@@ -765,7 +765,7 @@ components:
 
     PlanningUserUpdated:
       type: object
-      required: [id, email, firstName, lastName, role, gdprConsent]
+      required: [id, email, firstName, lastName, role, isActive]
       properties:
         id:
           type: string
@@ -780,7 +780,7 @@ components:
         role:
           type: string
           enum: [SPEAKER, VISITOR]
-        gdprConsent:
+        isActive:
           type: boolean
         phoneNumber:
           type: string
