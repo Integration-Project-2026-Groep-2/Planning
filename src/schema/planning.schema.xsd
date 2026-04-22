@@ -68,6 +68,7 @@
   <xs:simpleType name="PlanningUserRoleType">
     <xs:restriction base="xs:string">
       <xs:enumeration value="SPEAKER"/>
+      <xs:enumeration value="EVENT_MANAGER"/>
       <xs:enumeration value="VISITOR"/>
     </xs:restriction>
   </xs:simpleType>
