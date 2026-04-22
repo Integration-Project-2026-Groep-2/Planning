@@ -25,7 +25,7 @@ export const sendPlanningUserCreated = async (payload: PlanningUserCreatedPayloa
       firstName:   payload.firstName,
       lastName:    payload.lastName,
       role:        'SPEAKER',
-      gdprConsent: 'true',
+      isActive:    'true',
       phoneNumber: payload.phoneNumber,
       company:     payload.company,
     });
