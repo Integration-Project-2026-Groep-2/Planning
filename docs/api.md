@@ -545,6 +545,72 @@ Geeft één spreker terug op basis van het speakerId.
 
 ---
 
+### POST /api/speakers
+Maakt een nieuwe spreker aan met Zod validatie. Stuurt automatisch `planning.user.created` event naar RabbitMQ exchange `user.topic`.
+
+**Verplichte velden:** `firstName`, `lastName`, `email`
+
+**Request Body**
+```json
+{
+  "firstName": "Jan",
+  "lastName": "Jansen",
+  "email": "jan@example.com",
+  "phoneNumber": "+31612345678",
+  "company": "TechCorp"
+}
+```
+
+**Validatie**
+- `firstName`: verplicht, minimaal 1 karakter
+- `lastName`: verplicht, minimaal 1 karakter
+- `email`: verplicht, moet een geldig e-mailadres zijn, moet uniek zijn
+- `phoneNumber`: optioneel
+- `company`: optioneel
+
+**Response 201**
+```json
+{
+  "speakerId": "650e8400-e29b-41d4-a716-446655440000",
+  "crmMasterId": null,
+  "firstName": "Jan",
+  "lastName": "Jansen",
+  "email": "jan@example.com",
+  "phoneNumber": "+31612345678",
+  "company": "TechCorp",
+  "isActive": true
+}
+```
+
+**Response 400** - Validatiefout
+```json
+{ "error": { "fieldErrors": { "email": ["Ongeldig e-mailadres"] } } }
+```
+
+**Response 409** - Email duplicate
+```json
+{ "error": "E-mailadres is al in gebruik" }
+```
+
+**RabbitMQ Event**
+- Exchange: `user.topic`
+- Routing Key: `planning.user.created`
+- XML Payload:
+```xml
+<PlanningUserCreated>
+  <id>650e8400-e29b-41d4-a716-446655440000</id>
+  <email>jan@example.com</email>
+  <firstName>Jan</firstName>
+  <lastName>Jansen</lastName>
+  <role>SPEAKER</role>
+  <isActive>true</isActive>
+  <phoneNumber>+31612345678</phoneNumber>
+  <company>TechCorp</company>
+</PlanningUserCreated>
+```
+
+---
+
 ### PUT /api/speakers/:id
 Wijzigt een bestaande spreker. Alle velden zijn optioneel.
 
@@ -588,6 +654,23 @@ Wijzigt een bestaande spreker. Alle velden zijn optioneel.
 { "error": { "fieldErrors": { "email": ["Ongeldig e-mailadres"] } } }
 ```
 
+**RabbitMQ Event**
+- Exchange: `user.topic`
+- Routing Key: `planning.user.updated`
+- XML Payload:
+```xml
+<PlanningUserUpdated>
+  <id>650e8400-e29b-41d4-a716-446655440000</id>
+  <email>jan.new@example.com</email>
+  <firstName>Johannes</firstName>
+  <lastName>Jansen</lastName>
+  <role>SPEAKER</role>
+  <isActive>true</isActive>
+  <phoneNumber>+31612345678</phoneNumber>
+  <company>NewCorp</company>
+</PlanningUserUpdated>
+```
+
 ---
 
 ### PATCH /api/speakers/:id/deactivate
@@ -616,4 +699,16 @@ Deactiveert een spreker (zet isActive op false).
 **Response 404**
 ```json
 { "error": "Spreker niet gevonden" }
+```
+
+**RabbitMQ Event**
+- Exchange: `user.topic`
+- Routing Key: `planning.user.deactivated`
+- XML Payload:
+```xml
+<PlanningUserDeactivated>
+  <id>650e8400-e29b-41d4-a716-446655440000</id>
+  <email>jan@example.com</email>
+  <deactivatedAt>2026-04-22T14:30:00.000Z</deactivatedAt>
+</PlanningUserDeactivated>
 ```
