@@ -22,3 +22,17 @@ export const getChannel = () => {
   if (!channel) throw new Error('RabbitMQ not connected yet');
   return channel;
 };
+
+export const publishMessage = async (routingKey: string, message: any) => {
+  const ch = getChannel();
+
+  const exchange = 'user.topic';
+
+  await ch.assertExchange(exchange, 'topic', { durable: true });
+
+  ch.publish(
+    exchange,
+    routingKey,
+    Buffer.from(JSON.stringify(message))
+  );
+};

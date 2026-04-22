@@ -45,6 +45,7 @@ export const createSpeaker = async (data: CreateSpeakerDTO) => {
     email:       created.email,
     firstName:   created.firstName,
     lastName:    created.lastName,
+     role:        'SPEAKER',
     phoneNumber: created.phoneNumber,
     company:     created.company,
   });

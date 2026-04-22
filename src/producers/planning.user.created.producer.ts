@@ -7,6 +7,7 @@ type PlanningUserCreatedPayload = {
   email:        string;
   firstName:    string;
   lastName:     string;
+  role:        string;
   phoneNumber?: string;
   company?:     string;
 };
@@ -24,7 +25,7 @@ export const sendPlanningUserCreated = async (payload: PlanningUserCreatedPayloa
       email:       payload.email,
       firstName:   payload.firstName,
       lastName:    payload.lastName,
-      role:        'SPEAKER',
+      role:        payload.role ?? 'SPEAKER',
       isActive:    'true',
       phoneNumber: payload.phoneNumber,
       company:     payload.company,
