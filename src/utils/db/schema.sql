@@ -71,3 +71,16 @@ CREATE TABLE IF NOT EXISTS "ProcessedMessages" (
   "messageId"   VARCHAR(255) PRIMARY KEY,
   "processedAt" TIMESTAMP    NOT NULL DEFAULT NOW()
 );
+
+ALTER TABLE "Participant" ADD COLUMN IF NOT EXISTS "crmMasterId" UUID;
+ALTER TABLE "Speaker" ADD COLUMN IF NOT EXISTS "gdprConsent" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "Participant" ADD COLUMN IF NOT EXISTS "gdprConsent" BOOLEAN NOT NULL DEFAULT false;
+
+CREATE TABLE IF NOT EXISTS "User" (
+    "userId"    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    "firstName" VARCHAR(100) NOT NULL,
+    "lastName"  VARCHAR(100) NOT NULL,
+    "email"     VARCHAR(255) NOT NULL UNIQUE,
+    "role"      VARCHAR(50)  NOT NULL,
+    "company"   VARCHAR(255)
+);

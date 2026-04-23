@@ -68,6 +68,7 @@
   <xs:simpleType name="PlanningUserRoleType">
     <xs:restriction base="xs:string">
       <xs:enumeration value="SPEAKER"/>
+      <xs:enumeration value="EVENT_MANAGER"/>
       <xs:enumeration value="VISITOR"/>
     </xs:restriction>
   </xs:simpleType>
@@ -263,7 +264,7 @@
         <xs:element name="firstName"   type="xs:string"/>
         <xs:element name="lastName"    type="xs:string"/>
         <xs:element name="role"        type="PlanningUserRoleType"/>
-        <xs:element name="gdprConsent" type="xs:boolean"/>
+        <xs:element name="isActive" type="xs:boolean"/>
         <xs:element name="phoneNumber" type="xs:string" minOccurs="0"/>
         <xs:element name="company"     type="xs:string" minOccurs="0"/>
       </xs:sequence>
@@ -283,7 +284,7 @@
         <xs:element name="firstName"   type="xs:string"/>
         <xs:element name="lastName"    type="xs:string"/>
         <xs:element name="role"        type="PlanningUserRoleType"/>
-        <xs:element name="gdprConsent" type="xs:boolean"/>
+        <xs:element name="isActive" type="xs:boolean"/>
         <xs:element name="phoneNumber" type="xs:string" minOccurs="0"/>
         <xs:element name="company"     type="xs:string" minOccurs="0"/>
       </xs:sequence>

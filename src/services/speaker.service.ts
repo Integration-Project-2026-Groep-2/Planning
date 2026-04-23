@@ -1,5 +1,8 @@
 import { query } from '../db';
-import { UpdateSpeakerDTO } from '../models/speaker.model';
+import { CreateSpeakerDTO, UpdateSpeakerDTO } from '../models/speaker.model';
+import { sendPlanningUserCreated }     from '../producers/planning.user.created.producer';
+import { sendPlanningUserUpdated }     from '../producers/planning.user.updated.producer';
+import { sendPlanningUserDeactivated } from '../producers/planning.user.deactivated.producer';
 
 // ── Alle sprekers ophalen ──
 export const getAllSpeakers = async () => {
@@ -16,6 +19,38 @@ export const getSpeakerById = async (speakerId: string) => {
     [speakerId]
   );
   return result.rows[0] || null;
+};
+
+// ── Nieuwe spreker aanmaken ──
+export const createSpeaker = async (data: CreateSpeakerDTO) => {
+  const result = await query(
+    `INSERT INTO "Speaker"
+      ("firstName", "lastName", "email", "phoneNumber", "company")
+     VALUES ($1, $2, $3, $4, $5)
+     RETURNING *`,
+    [
+      data.firstName,
+      data.lastName,
+      data.email,
+      data.phoneNumber || null,
+      data.company     || null,
+    ]
+  );
+
+  const created = result.rows[0];
+
+  // ── Stuur planning.user.created naar exchange user.topic ──
+  await sendPlanningUserCreated({
+    id:          created.speakerId,
+    email:       created.email,
+    firstName:   created.firstName,
+    lastName:    created.lastName,
+     role:        'SPEAKER',
+    phoneNumber: created.phoneNumber,
+    company:     created.company,
+  });
+
+  return created;
 };
 
 // ── Spreker wijzigen ──
@@ -38,7 +73,22 @@ export const updateSpeaker = async (speakerId: string, data: UpdateSpeakerDTO) =
       speakerId,
     ]
   );
-  return result.rows[0] || null;
+
+  const updated = result.rows[0] || null;
+
+  if (updated) {
+    // ── Stuur planning.user.updated naar exchange user.topic ──
+    await sendPlanningUserUpdated({
+      id:          updated.speakerId,
+      email:       updated.email,
+      firstName:   updated.firstName,
+      lastName:    updated.lastName,
+      phoneNumber: updated.phoneNumber,
+      company:     updated.company,
+    });
+  }
+
+  return updated;
 };
 
 // ── Spreker deactiveren (soft delete) ──
@@ -50,5 +100,16 @@ export const deactivateSpeaker = async (speakerId: string) => {
      RETURNING *`,
     [speakerId]
   );
-  return result.rows[0] || null;
+
+  const deactivated = result.rows[0] || null;
+
+  if (deactivated) {
+    // ── Stuur planning.user.deactivated naar exchange user.topic ──
+    await sendPlanningUserDeactivated({
+      id:    deactivated.speakerId,
+      email: deactivated.email,
+    });
+  }
+
+  return deactivated;
 };

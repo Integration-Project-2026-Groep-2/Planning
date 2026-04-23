@@ -2,6 +2,9 @@ import { getChannel } from '../rabbitmq';
 import { z } from 'zod';
 import { query } from '../db';
 import { parseXml } from '../utils/xml.parser';
+import { isAlreadyProcessed, markAsProcessed } from '../utils/idempotency';
+import { sendToDlq } from '../utils/dlq';
+import crypto from 'crypto';
 
 const toBoolean = (value: unknown) => {
   if (value === 'true') return true;
@@ -22,46 +25,28 @@ export const startCompanyConfirmedConsumer = async () => {
   const channel = getChannel();
 
   const exchange = 'contact.topic';
-  const queue = 'crm.company.confirmed';
-
-  const dlx = 'contact.dlq';
-  const dlq = 'crm.company.confirmed.dlq';
-  const dlqRoutingKey = 'crm.company.confirmed.dlq';
+  const queue = 'planning.company.confirmed';
 
   await channel.assertExchange(exchange, 'topic', { durable: true });
-  await channel.assertExchange(dlx, 'topic', { durable: true });
-
   await channel.assertQueue(queue, { durable: true });
-  await channel.assertQueue(dlq, { durable: true });
 
   await channel.bindQueue(queue, exchange, 'crm.company.confirmed');
-  await channel.bindQueue(dlq, dlx, dlqRoutingKey);
 
   channel.consume(queue, async (msg) => {
     if (!msg) return;
 
     const xml = msg.content.toString();
+    const messageId = msg.properties.messageId || crypto.randomUUID();
 
     try {
-      const data = await parseXml(xml, 'CompanyConfirmed');
-      const parsed = schema.safeParse(data);
-
-      if (!parsed.success) {
-        console.error(
-          '[CRM] Zod validatie mislukt in crm.company.confirmed:',
-          parsed.error.flatten()
-        );
-
-        channel.publish(dlx, dlqRoutingKey, Buffer.from(xml), {
-          contentType: 'application/xml',
-          persistent: true,
-        });
-
+      const alreadyProcessed = await isAlreadyProcessed(messageId);
+      if (alreadyProcessed) {
         channel.ack(msg);
         return;
       }
 
-      const company = parsed.data;
+      const data = await parseXml(xml, 'CompanyConfirmed');
+      const company = schema.parse(data);
 
       await query(
         `UPDATE "Speaker"
@@ -71,15 +56,16 @@ export const startCompanyConfirmedConsumer = async () => {
         [company.name, company.isActive, company.id]
       );
 
+      await markAsProcessed(messageId);
       console.log('[CRM] Company opgeslagen in Speaker');
       channel.ack(msg);
     } catch (err) {
       console.error('[CRM] Fout in crm.company.confirmed:', err);
 
-      channel.publish(dlx, dlqRoutingKey, Buffer.from(xml), {
-        contentType: 'application/xml',
-        persistent: true,
-      });
+      await sendToDlq(
+        xml,
+        err instanceof Error ? err.message : 'Unknown error'
+      );
 
       channel.ack(msg);
     }

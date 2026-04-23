@@ -13,9 +13,10 @@ type SessionFullPayload = {
 export const sendSessionFull = async (payload: SessionFullPayload) => {
   try {
     const channel = getChannel();
-    const exchangeName = 'planning.session.full';
+    const exchangeName = 'planning.topic';
+    const routingKey = 'planning.session.full';
 
-    await channel.assertExchange(exchangeName, 'fanout', { durable: true });
+    await channel.assertExchange(exchangeName, 'topic', { durable: true });
 
     const xml = buildXml('SessionFull', {
       sessionId: payload.sessionId,
@@ -31,7 +32,7 @@ export const sendSessionFull = async (payload: SessionFullPayload) => {
       return;
     }
 
-    channel.publish(exchangeName, '', Buffer.from(xml), {
+    channel.publish(exchangeName, routingKey, Buffer.from(xml), {
       contentType: 'application/xml',
       persistent: true,
     });

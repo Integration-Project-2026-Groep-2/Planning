@@ -8,7 +8,6 @@ import {
   sendSessionCreated,
   sendSessionCancelled,
   sendSessionRescheduled,
-  sendSessionUpdateToCrm,
   sendSessionUpdated,
 } from '../producers';
 import { getLocationById } from './location.service';
@@ -136,7 +135,6 @@ export const updateSession = async (
   sessionId: string,
   data: UpdateSessionDTO
 ) => {
-  // Huidige sessie ophalen zodat we de oude waarden kunnen bewaren in de log
   const current = await getSessionById(sessionId);
   if (!current) return null;
 
@@ -185,7 +183,6 @@ export const updateSession = async (
     const currentDate = formatDate(current.date);
     const updatedDate = formatDate(updatedSession.date);
 
-    // ── Log de wijziging in SessionChangeLog ──
     await createLog({
       sessionId,
       oldStartTime: `${currentDate} ${current.startTime}`,
@@ -201,21 +198,13 @@ export const updateSession = async (
       newLocation = location?.roomName || 'Onbekend';
     }
 
-    await sendSessionUpdateToCrm({
-      sessionId: updatedSession.sessionId,
-      sessionName: updatedSession.title,
-      newTime: `${updatedDate}T${updatedSession.startTime}`,
-      newLocation,
-      changeType: 'updated',
-    });
-
     await sendSessionUpdated({
       sessionId: updatedSession.sessionId,
-      changeType: 'CAPACITY_CHANGED',
+      sessionName: updatedSession.title,
+      changeType: 'updated',
       newTime: `${updatedDate}T${updatedSession.startTime}`,
       newLocation,
-      newTitle: updatedSession.title,
-      newCapacity: updatedSession.capacity,
+      timestamp: new Date().toISOString(),
     });
   }
 
@@ -224,7 +213,6 @@ export const updateSession = async (
 
 // ── Sessie annuleren ──
 export const cancelSession = async (sessionId: string) => {
-  // Huidige sessie ophalen voor de log
   const current = await getSessionById(sessionId);
   if (!current) return null;
 
@@ -241,7 +229,6 @@ export const cancelSession = async (sessionId: string) => {
   if (cancelledSession) {
     const currentDate = formatDate(current.date);
 
-    // ── Log de annulering in SessionChangeLog ──
     await createLog({
       sessionId,
       oldStartTime: `${currentDate} ${current.startTime}`,
@@ -265,12 +252,13 @@ export const cancelSession = async (sessionId: string) => {
       reason: 'Session cancelled',
     });
 
-    await sendSessionUpdateToCrm({
+    await sendSessionUpdated({
       sessionId: cancelledSession.sessionId,
       sessionName: cancelledSession.title,
+      changeType: 'cancelled',
       newTime: `${formattedDate}T${cancelledSession.startTime}`,
       newLocation,
-      changeType: 'cancelled',
+      timestamp: new Date().toISOString(),
     });
   }
 
@@ -311,7 +299,6 @@ export const rescheduleSession = async (
 
   const currentDate = formatDate(current.date);
 
-  // ── Log het verzetten via de changelog service ──
   await createLog({
     sessionId,
     oldStartTime: `${currentDate} ${current.startTime}`,
@@ -324,7 +311,7 @@ export const rescheduleSession = async (
   const rescheduledSession = updated.rows[0];
 
   let newLocation = 'Onbekend';
- if (current.locationId) {
+  if (current.locationId) {
     const location = await getLocationById(current.locationId);
     newLocation = location?.roomName || 'Onbekend';
   }
@@ -341,12 +328,13 @@ export const rescheduleSession = async (
     reason: data.reason,
   });
 
-  await sendSessionUpdateToCrm({
+  await sendSessionUpdated({
     sessionId,
     sessionName: current.title,
+    changeType: 'rescheduled',
     newTime: `${data.date}T${data.startTime}`,
     newLocation,
-    changeType: 'rescheduled',
+    timestamp: new Date().toISOString(),
   });
 
   return rescheduledSession;

@@ -2,6 +2,9 @@ import { getChannel } from '../rabbitmq';
 import { parseXml } from '../utils/xml.parser';
 import { z } from 'zod';
 import { query } from '../db';
+import { isAlreadyProcessed, markAsProcessed } from '../utils/idempotency';
+import { sendToDlq } from '../utils/dlq';
+import crypto from 'crypto';
 
 const schema = z.object({
   id: z.string().uuid(),
@@ -13,7 +16,7 @@ export const startUserDeactivatedConsumer = async () => {
   const channel = getChannel();
 
   const exchange = 'contact.topic';
-  const queue = 'crm.user.deactivated';
+  const queue = 'planning.user.deactivated';
 
   await channel.assertExchange(exchange, 'topic', { durable: true });
   await channel.assertQueue(queue, { durable: true });
@@ -23,19 +26,18 @@ export const startUserDeactivatedConsumer = async () => {
   channel.consume(queue, async (msg) => {
     if (!msg) return;
 
+    const xml = msg.content.toString();
+    const messageId = msg.properties.messageId || crypto.randomUUID();
+
     try {
-      const xml = msg.content.toString();
-      const data = await parseXml(xml, 'UserDeactivated');
-
-      const parsed = schema.safeParse(data);
-
-      if (!parsed.success) {
-        console.error('[CRM] Zod validatie mislukt:', parsed.error.flatten());
+      const alreadyProcessed = await isAlreadyProcessed(messageId);
+      if (alreadyProcessed) {
         channel.ack(msg);
         return;
       }
 
-      const user = parsed.data;
+      const data = await parseXml(xml, 'UserDeactivated');
+      const user = schema.parse(data);
 
       await query(
         `UPDATE "Speaker"
@@ -44,10 +46,18 @@ export const startUserDeactivatedConsumer = async () => {
         [user.id]
       );
 
+      await markAsProcessed(messageId);
       console.log('[CRM] Speaker gedeactiveerd');
       channel.ack(msg);
     } catch (err) {
-      console.error('[CRM] Fout:', err);
+      console.error('[CRM] Fout in crm.user.deactivated:', err);
+
+      await sendToDlq(
+        xml,
+        err instanceof Error ? err.message : 'Unknown error'
+      );
+
+      channel.ack(msg);
     }
   });
 };

@@ -3,11 +3,22 @@ import { z } from 'zod';
 import {
   getAllSpeakers,
   getSpeakerById,
+  createSpeaker,
   updateSpeaker,
   deactivateSpeaker,
 } from '../services/speaker.service';
 
 const router = Router();
+
+// ── Zod schemas (validatieregels) ──
+
+const CreateSpeakerSchema = z.object({
+  firstName:   z.string().min(1, 'Voornaam is verplicht'),
+  lastName:    z.string().min(1, 'Achternaam is verplicht'),
+  email:       z.string().email('Ongeldig e-mailadres'),
+  phoneNumber: z.string().optional(),
+  company:     z.string().optional(),
+});
 
 const UpdateSpeakerSchema = z.object({
   firstName:   z.string().min(1).optional(),
@@ -38,6 +49,25 @@ router.get('/:id', async (req: Request, res: Response) => {
     res.json(speaker);
   } catch (err) {
     res.status(500).json({ error: 'Fout bij ophalen spreker' });
+  }
+});
+
+// ── POST /speakers ──
+router.post('/', async (req: Request, res: Response) => {
+  const parsed = CreateSpeakerSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+  try {
+    const speaker = await createSpeaker(parsed.data);
+    res.status(201).json(speaker);
+  } catch (err: any) {
+    if (err.code === '23505') {
+      res.status(409).json({ error: 'E-mailadres is al in gebruik' });
+      return;
+    }
+    res.status(500).json({ error: 'Fout bij aanmaken spreker' });
   }
 });
 

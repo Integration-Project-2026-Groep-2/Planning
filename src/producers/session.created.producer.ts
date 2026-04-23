@@ -17,9 +17,10 @@ type SessionCreatedPayload = {
 export const sendSessionCreated = async (payload: SessionCreatedPayload) => {
   try {
     const channel = getChannel();
-    const exchangeName = 'planning.session.created';
+    const exchangeName = 'planning.topic';
+    const routingKey = 'planning.session.created';
 
-    await channel.assertExchange(exchangeName, 'fanout', { durable: true });
+    await channel.assertExchange(exchangeName, 'topic', { durable: true });
 
     const xml = buildXml('SessionCreated', {
       sessionId: payload.sessionId,
@@ -39,7 +40,7 @@ export const sendSessionCreated = async (payload: SessionCreatedPayload) => {
       return;
     }
 
-    channel.publish(exchangeName, '', Buffer.from(xml), {
+    channel.publish(exchangeName, routingKey, Buffer.from(xml), {
       contentType: 'application/xml',
       persistent: true,
     });
