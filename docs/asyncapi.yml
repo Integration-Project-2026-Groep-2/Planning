@@ -203,7 +203,7 @@ channels:
 
   # ── CRM → PLANNING (via contact.topic) ──────────────────────────────
   crm.user.confirmed:
-    address: crm.user.confirmed
+    address: planning.user.confirmed
     description: |
       Planning luistert op deze queue.
       Als role=SPEAKER → opslaan in Speaker tabel.
@@ -220,7 +220,7 @@ channels:
           durable: true
 
   crm.user.updated:
-    address: crm.user.updated
+    address: planning.user.updated
     description: |
       Planning luistert op deze queue.
       Als role=SPEAKER → Speaker tabel bijwerken op basis van crmMasterId.
@@ -236,7 +236,7 @@ channels:
           durable: true
 
   crm.user.deactivated:
-    address: crm.user.deactivated
+    address: planning.user.deactivated
     description: |
       Planning luistert op deze queue.
       isActive op false zetten in Speaker tabel op basis van id.
@@ -252,7 +252,7 @@ channels:
           durable: true
 
   crm.company.confirmed:
-    address: crm.company.confirmed
+    address: planning.company.confirmed
     description: Planning luistert op deze queue — bedrijfsnaam opslaan als referentie.
     messages:
       CompanyConfirmedMessage:
@@ -266,7 +266,7 @@ channels:
           durable: true
 
   crm.company.updated:
-    address: crm.company.updated
+    address: planning.company.updated
     description: Planning luistert op deze queue — bedrijfsdata bijwerken.
     messages:
       CompanyUpdatedMessage:
@@ -280,7 +280,7 @@ channels:
           durable: true
 
   crm.company.deactivated:
-    address: crm.company.deactivated
+    address: planning.company.deactivated
     description: |
       Planning luistert op deze queue.
       Bedrijf deactiveren, controleer of gekoppeld aan toekomstige sessies.
