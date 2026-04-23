@@ -588,6 +588,9 @@ components:
         capacity:
           type: integer
           minimum: 1
+        icsData:
+          type: string
+          description: Base64 encoded ICS kalenderbestand
         timestamp:
           type: string
           format: date-time
@@ -614,6 +617,9 @@ components:
           items:
             type: string
             format: uuid
+        icsData:
+          type: string
+          description: Base64 encoded ICS kalenderbestand
         timestamp:
           type: string
           format: date-time
@@ -635,6 +641,9 @@ components:
           items:
             type: string
             format: uuid
+        icsData:
+          type: string
+          description: Base64 encoded ICS kalenderbestand
         timestamp:
           type: string
           format: date-time
@@ -673,6 +682,9 @@ components:
           items:
             type: string
             format: uuid
+        icsData:
+          type: string
+          description: Base64 encoded ICS kalenderbestand
         timestamp:
           type: string
           format: date-time
