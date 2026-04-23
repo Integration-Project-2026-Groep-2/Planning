@@ -16,7 +16,7 @@ export const startUserDeactivatedConsumer = async () => {
   const channel = getChannel();
 
   const exchange = 'contact.topic';
-  const queue = 'crm.user.deactivated';
+  const queue = 'planning.user.deactivated';
 
   await channel.assertExchange(exchange, 'topic', { durable: true });
   await channel.assertQueue(queue, { durable: true });

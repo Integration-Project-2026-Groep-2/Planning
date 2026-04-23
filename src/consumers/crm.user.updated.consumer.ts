@@ -28,7 +28,7 @@ export const startUserUpdatedConsumer = async () => {
   const channel = getChannel();
 
   const exchange = 'contact.topic';
-  const queue = 'crm.user.updated';
+  const queue = 'planning.user.updated';
 
   await channel.assertExchange(exchange, 'topic', { durable: true });
   await channel.assertQueue(queue, { durable: true });
