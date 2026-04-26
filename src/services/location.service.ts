@@ -1,7 +1,6 @@
 import { query } from '../db';
 import { CreateLocationDTO, UpdateLocationDTO } from '../models/location.model';
 
-// ── Alle locaties ophalen ──
 export const getAllLocations = async () => {
   const result = await query(
     `SELECT * FROM "Location" ORDER BY "roomName"`
@@ -9,7 +8,6 @@ export const getAllLocations = async () => {
   return result.rows;
 };
 
-// ── Één locatie ophalen op ID ──
 export const getLocationById = async (locationId: string) => {
   const result = await query(
     `SELECT * FROM "Location" WHERE "locationId" = $1`,
@@ -18,24 +16,28 @@ export const getLocationById = async (locationId: string) => {
   return result.rows[0] || null;
 };
 
-// ── Nieuwe locatie aanmaken ──
 export const createLocation = async (data: CreateLocationDTO) => {
+  // Duplicate check
+  const existing = await query(
+    `SELECT 1 FROM "Location" WHERE "roomName" = $1`,
+    [data.roomName]
+  );
+  if (existing.rowCount && existing.rowCount > 0) {
+    const err: any = new Error('Zaal bestaat al');
+    err.code = '23505';
+    throw err;
+  }
+
   const result = await query(
     `INSERT INTO "Location"
       ("roomName", "address", "capacity", "status")
      VALUES ($1, $2, $3, $4)
      RETURNING *`,
-    [
-      data.roomName,
-      data.address || null,
-      data.capacity,
-      data.status || 'beschikbaar',
-    ]
+    [data.roomName, data.address || null, data.capacity, data.status || 'beschikbaar']
   );
   return result.rows[0];
 };
 
-// ── Locatie wijzigen ──
 export const updateLocation = async (locationId: string, data: UpdateLocationDTO) => {
   const result = await query(
     `UPDATE "Location" SET
@@ -45,18 +47,11 @@ export const updateLocation = async (locationId: string, data: UpdateLocationDTO
       "status"   = COALESCE($4, "status")
      WHERE "locationId" = $5
      RETURNING *`,
-    [
-      data.roomName,
-      data.address,
-      data.capacity,
-      data.status,
-      locationId,
-    ]
+    [data.roomName, data.address, data.capacity, data.status, locationId]
   );
   return result.rows[0] || null;
 };
 
-// ── Locatie verwijderen ──
 export const deleteLocation = async (locationId: string) => {
   const result = await query(
     `DELETE FROM "Location" WHERE "locationId" = $1 RETURNING *`,

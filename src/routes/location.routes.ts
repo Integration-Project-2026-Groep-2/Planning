@@ -58,11 +58,14 @@ router.post('/', async (req: Request, res: Response) => {
   try {
     const location = await createLocation(parsed.data);
     res.status(201).json(location);
-  } catch (err) {
+  } catch (err: any) {
+    if (err.code === '23505') {
+      res.status(409).json({ error: 'Zaal met deze naam bestaat al' });
+      return;
+    }
     res.status(500).json({ error: 'Fout bij aanmaken locatie' });
   }
 });
-
 // ── PUT /locations/:id ──
 router.put('/:id', async (req: Request, res: Response) => {
   const parsed = UpdateLocationSchema.safeParse(req.body);
@@ -91,7 +94,11 @@ router.delete('/:id', async (req: Request, res: Response) => {
       return;
     }
     res.json({ message: 'Locatie verwijderd', location });
-  } catch (err) {
+  } catch (err: any) {
+    if (err.code === '23503') {
+      res.status(409).json({ error: 'Locatie is nog gelinkt aan een sessie — verwijder eerst de sessie' });
+      return;
+    }
     res.status(500).json({ error: 'Fout bij verwijderen locatie' });
   }
 });
