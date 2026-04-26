@@ -712,3 +712,81 @@ Deactiveert een spreker (zet isActive op false).
   <deactivatedAt>2026-04-22T14:30:00.000Z</deactivatedAt>
 </PlanningUserDeactivated>
 ```
+## Session Speakers
+
+### GET /api/sessions/:id/speakers
+Geeft alle sprekers terug die gelinkt zijn aan een sessie.
+
+**Request**
+- Geen body vereist
+
+**Response 200**
+```json
+[
+  {
+    "sessionSpeakerId": "uuid",
+    "sessionId": "uuid",
+    "speakerId": "uuid",
+    "role": null,
+    "confirmed": false,
+    "firstName": "Jan",
+    "lastName": "Jansen",
+    "email": "jan@example.com",
+    "company": "TechCorp"
+  }
+]
+```
+
+---
+
+### POST /api/sessions/:id/speakers
+Linkt een spreker aan een sessie.
+
+**Verplichte velden:** `speakerId`
+
+**Request body**
+```json
+{
+  "speakerId": "uuid-van-spreker",
+  "role": "hoofdspreker (optioneel)"
+}
+```
+
+**Response 201**
+```json
+{
+  "sessionSpeakerId": "uuid",
+  "sessionId": "uuid",
+  "speakerId": "uuid",
+  "role": null,
+  "confirmed": false
+}
+```
+
+**Response 400** - Validatiefout
+```json
+{ "error": { "fieldErrors": { "speakerId": ["speakerId moet een geldig UUID zijn"] } } }
+```
+
+**Response 409** - Spreker al gelinkt
+```json
+{ "error": "Spreker is al gelinkt aan deze sessie" }
+```
+
+---
+
+### DELETE /api/sessions/:id/speakers/:speakerId
+Verwijdert de koppeling tussen een spreker en een sessie.
+
+**Request**
+- Geen body vereist
+
+**Response 200**
+```json
+{ "message": "Spreker verwijderd van sessie" }
+```
+
+**Response 404**
+```json
+{ "error": "Koppeling niet gevonden" }
+```
