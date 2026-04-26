@@ -84,3 +84,6 @@ CREATE TABLE IF NOT EXISTS "User" (
     "role"      VARCHAR(50)  NOT NULL,
     "company"   VARCHAR(255)
 );
+
+ALTER TABLE "Speaker" ADD CONSTRAINT IF NOT EXISTS speaker_email_unique UNIQUE ("email");
+ALTER TABLE "Location" ADD CONSTRAINT IF NOT EXISTS location_roomname_unique UNIQUE ("roomName");
