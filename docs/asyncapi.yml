@@ -631,6 +631,8 @@ components:
         sessionId:
           type: string
           format: uuid
+        sessionName:
+           type: string
         status:
           type: string
           const: cancelled
@@ -655,6 +657,8 @@ components:
         sessionId:
           type: string
           format: uuid
+        sessionName:
+          type: string
         oldDate:
           type: string
           format: date
