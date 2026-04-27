@@ -25,7 +25,7 @@ export const sendPlanningUserCreated = async (payload: PlanningUserCreatedPayloa
       email:       payload.email,
       firstName:   payload.firstName,
       lastName:    payload.lastName,
-      role:        payload.role ?? 'SPEAKER',
+      role:        payload.role,
       isActive:    'true',
       phoneNumber: payload.phoneNumber,
       company:     payload.company,
