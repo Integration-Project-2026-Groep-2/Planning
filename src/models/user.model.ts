@@ -7,3 +7,11 @@ export interface CreateUserDTO {
   role: UserRole;
   company?: string;
 }
+
+export interface UpdateUserDTO {
+  firstName?: string;
+  lastName?:  string;
+  email?:     string;
+  role?:      UserRole;
+  company?:   string;
+}
