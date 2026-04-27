@@ -248,6 +248,7 @@ export const cancelSession = async (sessionId: string) => {
 
     await sendSessionCancelled({
       sessionId: cancelledSession.sessionId,
+      sessionName: cancelledSession.title,
       status: 'cancelled',
       reason: 'Session cancelled',
     });
@@ -318,6 +319,7 @@ export const rescheduleSession = async (
 
   await sendSessionRescheduled({
     sessionId,
+    sessionName: current.title,
     oldDate: currentDate,
     oldStartTime: current.startTime,
     oldEndTime: current.endTime,

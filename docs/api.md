@@ -60,7 +60,7 @@ Geeft één sessie terug op basis van het sessionId.
 ---
 
 ### POST /api/sessions
-Maakt een nieuwe sessie aan. Valideert de invoer met Zod.
+Maakt een nieuwe sessie aan. Valideert de invoer met Zod. Genereert automatisch een ICS kalenderbestand en stuurt dit mee naar RabbitMQ.
 
 **Verplichte velden:** `title`, `date`, `startTime`, `endTime`, `capacity`
 
@@ -105,6 +105,11 @@ Maakt een nieuwe sessie aan. Valideert de invoer met Zod.
 ```json
 { "error": "Locatie is al bezet op dit tijdslot" }
 ```
+
+**RabbitMQ Event**
+- Exchange: `planning.topic`
+- Routing Key: `planning.session.created`
+- XML Payload bevat een `icsData` veld — een base64-geëncodeerd `.ics` kalenderbestand dat door andere services gebruikt kan worden om de sessie toe te voegen aan een kalender zoals Outlook.
 
 ---
 
@@ -339,10 +344,11 @@ Annuleert de inschrijving van een deelnemer. Als de sessie volzet was, wordt de 
 { "error": "Inschrijving niet gevonden" }
 ```
 
+---
 
 ## Locations
 
-dir src\producers### GET /api/locations
+### GET /api/locations
 Geeft alle locaties terug, gesorteerd op roomName.
 
 **Request**
@@ -711,4 +717,300 @@ Deactiveert een spreker (zet isActive op false).
   <email>jan@example.com</email>
   <deactivatedAt>2026-04-22T14:30:00.000Z</deactivatedAt>
 </PlanningUserDeactivated>
+```
+
+---
+
+## Users
+
+### GET /api/users
+Geeft alle users terug, gesorteerd op achternaam en voornaam.
+
+**Request**
+- Geen body vereist
+
+**Response 200**
+```json
+[
+  {
+    "userId": "750e8400-e29b-41d4-a716-446655440000",
+    "firstName": "Sara",
+    "lastName": "Peeters",
+    "email": "sara@example.com",
+    "role": "EVENT_MANAGER",
+    "company": "EventCorp",
+    "isActive": true
+  }
+]
+```
+
+---
+
+### GET /api/users/:id
+Geeft één user terug op basis van het userId.
+
+**Request**
+- Geen body vereist
+
+**Response 200**
+```json
+{
+  "userId": "750e8400-e29b-41d4-a716-446655440000",
+  "firstName": "Sara",
+  "lastName": "Peeters",
+  "email": "sara@example.com",
+  "role": "EVENT_MANAGER",
+  "company": "EventCorp",
+  "isActive": true
+}
+```
+
+**Response 404**
+```json
+{ "error": "User niet gevonden" }
+```
+
+---
+
+### POST /api/users
+Maakt een nieuwe user aan. Stuurt automatisch `planning.user.created` event naar RabbitMQ exchange `user.topic`.
+
+**Verplichte velden:** `firstName`, `lastName`, `email`, `role`
+
+**Request body**
+```json
+{
+  "firstName": "Sara",
+  "lastName": "Peeters",
+  "email": "sara@example.com",
+  "role": "EVENT_MANAGER",
+  "company": "EventCorp"
+}
+```
+
+**Validatieregels**
+- `firstName`: verplicht
+- `lastName`: verplicht
+- `email`: verplicht
+- `role`: verplicht, moet `EVENT_MANAGER` of `VISITOR` zijn
+- `company`: optioneel
+
+**Response 201**
+```json
+{
+  "userId": "750e8400-e29b-41d4-a716-446655440000",
+  "firstName": "Sara",
+  "lastName": "Peeters",
+  "email": "sara@example.com",
+  "role": "EVENT_MANAGER",
+  "company": "EventCorp",
+  "isActive": true
+}
+```
+
+**Response 400** — validatiefout
+```json
+{ "error": "Missing required fields" }
+```
+
+**Response 400** — email duplicate
+```json
+{ "error": "Email already exists" }
+```
+
+**RabbitMQ Event**
+- Exchange: `user.topic`
+- Routing Key: `planning.user.created`
+- XML Payload:
+```xml
+<PlanningUserCreated>
+  <id>750e8400-e29b-41d4-a716-446655440000</id>
+  <email>sara@example.com</email>
+  <firstName>Sara</firstName>
+  <lastName>Peeters</lastName>
+  <role>EVENT_MANAGER</role>
+  <isActive>true</isActive>
+  <company>EventCorp</company>
+</PlanningUserCreated>
+```
+
+---
+
+### PUT /api/users/:id
+Wijzigt een bestaande user. Alle velden zijn optioneel.
+
+**Request body**
+```json
+{
+  "firstName": "Sara",
+  "email": "sara.new@example.com",
+  "role": "VISITOR"
+}
+```
+
+**Validatieregels**
+- `firstName`: optioneel, minimaal 1 karakter
+- `lastName`: optioneel, minimaal 1 karakter
+- `email`: optioneel, moet een geldig e-mailadres zijn
+- `role`: optioneel, moet `EVENT_MANAGER` of `VISITOR` zijn
+- `company`: optioneel
+
+**Response 200**
+```json
+{
+  "userId": "750e8400-e29b-41d4-a716-446655440000",
+  "firstName": "Sara",
+  "lastName": "Peeters",
+  "email": "sara.new@example.com",
+  "role": "VISITOR",
+  "company": "EventCorp",
+  "isActive": true
+}
+```
+
+**Response 404**
+```json
+{ "error": "User niet gevonden" }
+```
+
+**Response 400** — validatiefout
+```json
+{ "error": { "fieldErrors": { "email": ["Ongeldig e-mailadres"] } } }
+```
+
+**RabbitMQ Event**
+- Exchange: `user.topic`
+- Routing Key: `planning.user.updated`
+- XML Payload:
+```xml
+<PlanningUserUpdated>
+  <id>750e8400-e29b-41d4-a716-446655440000</id>
+  <email>sara.new@example.com</email>
+  <firstName>Sara</firstName>
+  <lastName>Peeters</lastName>
+  <role>VISITOR</role>
+  <company>EventCorp</company>
+</PlanningUserUpdated>
+```
+
+---
+
+### PATCH /api/users/:id/deactivate
+Deactiveert een user (zet isActive op false).
+
+**Request**
+- Geen body vereist
+
+**Response 200**
+```json
+{
+  "message": "User gedeactiveerd",
+  "user": {
+    "userId": "750e8400-e29b-41d4-a716-446655440000",
+    "firstName": "Sara",
+    "lastName": "Peeters",
+    "email": "sara@example.com",
+    "role": "EVENT_MANAGER",
+    "company": "EventCorp",
+    "isActive": false
+  }
+}
+```
+
+**Response 404**
+```json
+{ "error": "User niet gevonden" }
+```
+
+**RabbitMQ Event**
+- Exchange: `user.topic`
+- Routing Key: `planning.user.deactivated`
+- XML Payload:
+```xml
+<PlanningUserDeactivated>
+  <id>750e8400-e29b-41d4-a716-446655440000</id>
+  <email>sara@example.com</email>
+  <deactivatedAt>2026-04-22T14:30:00.000Z</deactivatedAt>
+</PlanningUserDeactivated>
+```
+
+---
+
+## Session Speakers
+
+### GET /api/sessions/:id/speakers
+Geeft alle sprekers terug die gelinkt zijn aan een sessie.
+
+**Request**
+- Geen body vereist
+
+**Response 200**
+```json
+[
+  {
+    "sessionSpeakerId": "uuid",
+    "sessionId": "uuid",
+    "speakerId": "uuid",
+    "role": null,
+    "confirmed": false,
+    "firstName": "Jan",
+    "lastName": "Jansen",
+    "email": "jan@example.com",
+    "company": "TechCorp"
+  }
+]
+```
+
+---
+
+### POST /api/sessions/:id/speakers
+Linkt een spreker aan een sessie.
+
+**Verplichte velden:** `speakerId`
+
+**Request body**
+```json
+{
+  "speakerId": "uuid-van-spreker",
+  "role": "hoofdspreker (optioneel)"
+}
+```
+
+**Response 201**
+```json
+{
+  "sessionSpeakerId": "uuid",
+  "sessionId": "uuid",
+  "speakerId": "uuid",
+  "role": null,
+  "confirmed": false
+}
+```
+
+**Response 400** - Validatiefout
+```json
+{ "error": { "fieldErrors": { "speakerId": ["speakerId moet een geldig UUID zijn"] } } }
+```
+
+**Response 409** - Spreker al gelinkt
+```json
+{ "error": "Spreker is al gelinkt aan deze sessie" }
+```
+
+---
+
+### DELETE /api/sessions/:id/speakers/:speakerId
+Verwijdert de koppeling tussen een spreker en een sessie.
+
+**Request**
+- Geen body vereist
+
+**Response 200**
+```json
+{ "message": "Spreker verwijderd van sessie" }
+```
+
+**Response 404**
+```json
+{ "error": "Koppeling niet gevonden" }
 ```

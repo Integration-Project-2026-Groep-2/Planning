@@ -82,5 +82,9 @@ CREATE TABLE IF NOT EXISTS "User" (
     "lastName"  VARCHAR(100) NOT NULL,
     "email"     VARCHAR(255) NOT NULL UNIQUE,
     "role"      VARCHAR(50)  NOT NULL,
-    "company"   VARCHAR(255)
+    "company"   VARCHAR(255),
+    "isActive"  BOOLEAN NOT NULL DEFAULT true
 );
+ALTER TABLE "Speaker" ADD CONSTRAINT IF NOT EXISTS speaker_email_unique UNIQUE ("email");
+ALTER TABLE "Location" ADD CONSTRAINT IF NOT EXISTS location_roomname_unique UNIQUE ("roomName");
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "isActive" BOOLEAN NOT NULL DEFAULT true;
