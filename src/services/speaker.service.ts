@@ -78,16 +78,16 @@ export const updateSpeaker = async (speakerId: string, data: UpdateSpeakerDTO) =
 
   if (updated) {
     // ── Stuur planning.user.updated naar exchange user.topic ──
-    await sendPlanningUserUpdated({
-      id:          updated.speakerId,
-      email:       updated.email,
-      firstName:   updated.firstName,
-      lastName:    updated.lastName,
-      phoneNumber: updated.phoneNumber,
-      company:     updated.company,
-    });
+await sendPlanningUserUpdated({
+  id:          updated.speakerId,
+  email:       updated.email,
+  firstName:   updated.firstName,
+  lastName:    updated.lastName,
+  role:        'SPEAKER',
+  phoneNumber: updated.phoneNumber,
+  company:     updated.company,
+});
   }
-
   return updated;
 };
 
