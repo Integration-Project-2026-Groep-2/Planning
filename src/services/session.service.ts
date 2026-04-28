@@ -31,7 +31,6 @@ const checkLocationConflict = async (
        AND ($5::uuid IS NULL OR "sessionId" != $5)`,
     [locationId, date, startTime, endTime, excludeSessionId || null]
   );
-
   return result.rows.length > 0;
 };
 
@@ -71,15 +70,9 @@ export const getSessionById = async (sessionId: string) => {
 export const createSession = async (data: CreateSessionDTO) => {
   if (data.locationId) {
     const conflict = await checkLocationConflict(
-      data.locationId,
-      data.date,
-      data.startTime,
-      data.endTime
+      data.locationId, data.date, data.startTime, data.endTime
     );
-
-    if (conflict) {
-      throw new Error('LOCATION_CONFLICT');
-    }
+    if (conflict) throw new Error('LOCATION_CONFLICT');
   }
 
   const result = await query(
@@ -132,25 +125,16 @@ export const createSession = async (data: CreateSessionDTO) => {
   return createdSession;
 };
 
-export const updateSession = async (
-  sessionId: string,
-  data: UpdateSessionDTO
-) => {
+// ── Sessie wijzigen ──
+export const updateSession = async (sessionId: string, data: UpdateSessionDTO) => {
   const current = await getSessionById(sessionId);
   if (!current) return null;
 
   if (data.locationId && data.date && data.startTime && data.endTime) {
     const conflict = await checkLocationConflict(
-      data.locationId,
-      data.date,
-      data.startTime,
-      data.endTime,
-      sessionId
+      data.locationId, data.date, data.startTime, data.endTime, sessionId
     );
-
-    if (conflict) {
-      throw new Error('LOCATION_CONFLICT');
-    }
+    if (conflict) throw new Error('LOCATION_CONFLICT');
   }
 
   const result = await query(
@@ -166,15 +150,8 @@ export const updateSession = async (
      WHERE "sessionId" = $9
      RETURNING *`,
     [
-      data.title,
-      data.description,
-      data.date,
-      data.startTime,
-      data.endTime,
-      data.status,
-      data.locationId,
-      data.capacity,
-      sessionId,
+      data.title, data.description, data.date, data.startTime,
+      data.endTime, data.status, data.locationId, data.capacity, sessionId,
     ]
   );
 
@@ -199,12 +176,17 @@ export const updateSession = async (
       newLocation = location?.roomName || 'Onbekend';
     }
 
+    // ── SessionUpdated: datum + tijden meesturen voor ICS ──
     await sendSessionUpdated({
       sessionId:   updatedSession.sessionId,
       sessionName: updatedSession.title,
       changeType:  'updated',
+      date:        updatedDate,
+      startTime:   updatedSession.startTime,
+      endTime:     updatedSession.endTime,
       newTime:     `${updatedDate}T${updatedSession.startTime}`,
       newLocation,
+      description: updatedSession.description ?? undefined,
       timestamp:   new Date().toISOString(),
     });
   }
@@ -212,6 +194,7 @@ export const updateSession = async (
   return updatedSession;
 };
 
+// ── Sessie annuleren ──
 export const cancelSession = async (sessionId: string) => {
   const current = await getSessionById(sessionId);
   if (!current) return null;
@@ -238,17 +221,21 @@ export const cancelSession = async (sessionId: string) => {
       reason:       'Sessie geannuleerd',
     });
 
-    let newLocation = 'Onbekend';
+    let locationName = 'Onbekend';
     if (cancelledSession.locationId) {
       const location = await getLocationById(cancelledSession.locationId);
-      newLocation = location?.roomName || 'Onbekend';
+      locationName = location?.roomName || 'Onbekend';
     }
 
-    const formattedDate = formatDate(cancelledSession.date);
-
+    // ── SessionCancelled: datum + tijden meesturen 
     await sendSessionCancelled({
       sessionId:   cancelledSession.sessionId,
       sessionName: cancelledSession.title,
+      date:        currentDate,
+      startTime:   current.startTime,
+      endTime:     current.endTime,
+      location:    locationName,
+      description: cancelledSession.description ?? undefined,
       status:      'cancelled',
       reason:      'Session cancelled',
     });
@@ -257,8 +244,12 @@ export const cancelSession = async (sessionId: string) => {
       sessionId:   cancelledSession.sessionId,
       sessionName: cancelledSession.title,
       changeType:  'cancelled',
-      newTime:     `${formattedDate}T${cancelledSession.startTime}`,
-      newLocation,
+      date:        currentDate,
+      startTime:   current.startTime,
+      endTime:     current.endTime,
+      newTime:     `${currentDate}T${current.startTime}`,
+      newLocation: locationName,
+      description: cancelledSession.description ?? undefined,
       timestamp:   new Date().toISOString(),
     });
   }
@@ -266,6 +257,7 @@ export const cancelSession = async (sessionId: string) => {
   return cancelledSession;
 };
 
+// ── Sessie verzetten  ──
 export const rescheduleSession = async (
   sessionId: string,
   data: RescheduleSessionDTO
@@ -275,16 +267,9 @@ export const rescheduleSession = async (
 
   if (current.locationId) {
     const conflict = await checkLocationConflict(
-      current.locationId,
-      data.date,
-      data.startTime,
-      data.endTime,
-      sessionId
+      current.locationId, data.date, data.startTime, data.endTime, sessionId
     );
-
-    if (conflict) {
-      throw new Error('LOCATION_CONFLICT');
-    }
+    if (conflict) throw new Error('LOCATION_CONFLICT');
   }
 
   const updated = await query(
@@ -333,14 +318,19 @@ export const rescheduleSession = async (
     sessionId,
     sessionName: current.title,
     changeType:  'rescheduled',
+    date:        data.date,
+    startTime:   data.startTime,
+    endTime:     data.endTime,
     newTime:     `${data.date}T${data.startTime}`,
     newLocation,
+    description: current.description ?? undefined,
     timestamp:   new Date().toISOString(),
   });
 
   return rescheduledSession;
 };
 
+// ── Sessie verwijderen ──
 export const deleteSession = async (sessionId: string) => {
   const result = await query(
     `DELETE FROM "Session" WHERE "sessionId" = $1 RETURNING *`,
