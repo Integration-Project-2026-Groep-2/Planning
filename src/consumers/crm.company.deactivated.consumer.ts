@@ -91,9 +91,10 @@ export const startCompanyDeactivatedConsumer = async () => {
     } catch (err) {
       console.error('[CRM] Fout in crm.company.deactivated:', err);
 
-      await sendToDlq(
-        xml,
-        err instanceof Error ? err.message : 'Unknown error'
+     await sendToDlq(
+        xml, 
+        err instanceof Error ? err.message : 'Unknown error', 
+        'crm.company.deactivated'
       );
 
       channel.ack(msg);
