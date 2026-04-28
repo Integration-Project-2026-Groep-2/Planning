@@ -12,8 +12,8 @@ import {
 } from '../producers';
 import { getLocationById } from './location.service';
 import { createLog } from './changelog.service';
+import { generateIcsBase64 } from '../utils/ics.generator';
 
-// ── Hulpfunctie: controleer of locatie al bezet is op dat tijdslot ──
 const checkLocationConflict = async (
   locationId: string,
   date: string,
@@ -35,31 +35,24 @@ const checkLocationConflict = async (
   return result.rows.length > 0;
 };
 
-// ── Hulpfunctie: datum formatteren ──
 const formatDate = (date: Date | string): string => {
   return date instanceof Date
     ? date.toISOString().split('T')[0]
     : String(date).split('T')[0];
 };
 
-// ── Hulpfunctie: status mappen naar contractwaarden ──
 const mapSessionStatus = (
   status: string
 ): 'active' | 'cancelled' | 'full' | 'concept' => {
   switch (status) {
-    case 'actief':
-      return 'active';
-    case 'geannuleerd':
-      return 'cancelled';
-    case 'volzet':
-      return 'full';
+    case 'actief':      return 'active';
+    case 'geannuleerd': return 'cancelled';
+    case 'volzet':      return 'full';
     case 'concept':
-    default:
-      return 'concept';
+    default:            return 'concept';
   }
 };
 
-// ── Alle sessies ophalen ──
 export const getAllSessions = async () => {
   const result = await query(
     `SELECT * FROM "Session" ORDER BY "date", "startTime"`
@@ -67,7 +60,6 @@ export const getAllSessions = async () => {
   return result.rows;
 };
 
-// ── Één sessie ophalen op ID ──
 export const getSessionById = async (sessionId: string) => {
   const result = await query(
     `SELECT * FROM "Session" WHERE "sessionId" = $1`,
@@ -76,7 +68,6 @@ export const getSessionById = async (sessionId: string) => {
   return result.rows[0] || null;
 };
 
-// ── Nieuwe sessie aanmaken ──
 export const createSession = async (data: CreateSessionDTO) => {
   if (data.locationId) {
     const conflict = await checkLocationConflict(
@@ -93,8 +84,8 @@ export const createSession = async (data: CreateSessionDTO) => {
 
   const result = await query(
     `INSERT INTO "Session"
-      ("title", "description", "date", "startTime", "endTime", "status", "locationId", "capacity")
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      ("title", "description", "date", "startTime", "endTime", "status", "locationId", "capacity", "syncStatus")
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending')
      RETURNING *`,
     [
       data.title,
@@ -116,21 +107,31 @@ export const createSession = async (data: CreateSessionDTO) => {
     locationName = location?.roomName || 'Onbekend';
   }
 
+  const icsData = generateIcsBase64({
+    sessionId:   createdSession.sessionId,
+    title:       createdSession.title,
+    date:        formatDate(createdSession.date),
+    startTime:   createdSession.startTime,
+    endTime:     createdSession.endTime,
+    location:    locationName,
+    description: createdSession.description ?? undefined,
+  });
+
   await sendSessionCreated({
     sessionId: createdSession.sessionId,
-    title: createdSession.title,
-    date: formatDate(createdSession.date),
+    title:     createdSession.title,
+    date:      formatDate(createdSession.date),
     startTime: createdSession.startTime,
-    endTime: createdSession.endTime,
-    location: locationName,
-    capacity: createdSession.capacity,
-    status: mapSessionStatus(createdSession.status),
+    endTime:   createdSession.endTime,
+    location:  locationName,
+    capacity:  createdSession.capacity,
+    status:    mapSessionStatus(createdSession.status),
+    icsData,
   });
 
   return createdSession;
 };
 
-// ── Sessie wijzigen ──
 export const updateSession = async (
   sessionId: string,
   data: UpdateSessionDTO
@@ -187,9 +188,9 @@ export const updateSession = async (
       sessionId,
       oldStartTime: `${currentDate} ${current.startTime}`,
       newStartTime: `${updatedDate} ${updatedSession.startTime}`,
-      oldEndTime: `${currentDate} ${current.endTime}`,
-      newEndTime: `${updatedDate} ${updatedSession.endTime}`,
-      reason: 'Sessie gewijzigd via PUT',
+      oldEndTime:   `${currentDate} ${current.endTime}`,
+      newEndTime:   `${updatedDate} ${updatedSession.endTime}`,
+      reason:       'Sessie gewijzigd via PUT',
     });
 
     let newLocation = 'Onbekend';
@@ -199,19 +200,18 @@ export const updateSession = async (
     }
 
     await sendSessionUpdated({
-      sessionId: updatedSession.sessionId,
+      sessionId:   updatedSession.sessionId,
       sessionName: updatedSession.title,
-      changeType: 'updated',
-      newTime: `${updatedDate}T${updatedSession.startTime}`,
+      changeType:  'updated',
+      newTime:     `${updatedDate}T${updatedSession.startTime}`,
       newLocation,
-      timestamp: new Date().toISOString(),
+      timestamp:   new Date().toISOString(),
     });
   }
 
   return updatedSession;
 };
 
-// ── Sessie annuleren ──
 export const cancelSession = async (sessionId: string) => {
   const current = await getSessionById(sessionId);
   if (!current) return null;
@@ -233,9 +233,9 @@ export const cancelSession = async (sessionId: string) => {
       sessionId,
       oldStartTime: `${currentDate} ${current.startTime}`,
       newStartTime: null,
-      oldEndTime: `${currentDate} ${current.endTime}`,
-      newEndTime: null,
-      reason: 'Sessie geannuleerd',
+      oldEndTime:   `${currentDate} ${current.endTime}`,
+      newEndTime:   null,
+      reason:       'Sessie geannuleerd',
     });
 
     let newLocation = 'Onbekend';
@@ -247,26 +247,25 @@ export const cancelSession = async (sessionId: string) => {
     const formattedDate = formatDate(cancelledSession.date);
 
     await sendSessionCancelled({
-      sessionId: cancelledSession.sessionId,
+      sessionId:   cancelledSession.sessionId,
       sessionName: cancelledSession.title,
-      status: 'cancelled',
-      reason: 'Session cancelled',
+      status:      'cancelled',
+      reason:      'Session cancelled',
     });
 
     await sendSessionUpdated({
-      sessionId: cancelledSession.sessionId,
+      sessionId:   cancelledSession.sessionId,
       sessionName: cancelledSession.title,
-      changeType: 'cancelled',
-      newTime: `${formattedDate}T${cancelledSession.startTime}`,
+      changeType:  'cancelled',
+      newTime:     `${formattedDate}T${cancelledSession.startTime}`,
       newLocation,
-      timestamp: new Date().toISOString(),
+      timestamp:   new Date().toISOString(),
     });
   }
 
   return cancelledSession;
 };
 
-// ── Sessie verzetten (reschedule) ──
 export const rescheduleSession = async (
   sessionId: string,
   data: RescheduleSessionDTO
@@ -304,9 +303,9 @@ export const rescheduleSession = async (
     sessionId,
     oldStartTime: `${currentDate} ${current.startTime}`,
     newStartTime: `${data.date} ${data.startTime}`,
-    oldEndTime: `${currentDate} ${current.endTime}`,
-    newEndTime: `${data.date} ${data.endTime}`,
-    reason: data.reason,
+    oldEndTime:   `${currentDate} ${current.endTime}`,
+    newEndTime:   `${data.date} ${data.endTime}`,
+    reason:       data.reason,
   });
 
   const rescheduledSession = updated.rows[0];
@@ -319,30 +318,29 @@ export const rescheduleSession = async (
 
   await sendSessionRescheduled({
     sessionId,
-    sessionName: current.title,
-    oldDate: currentDate,
+    sessionName:  current.title,
+    oldDate:      currentDate,
     oldStartTime: current.startTime,
-    oldEndTime: current.endTime,
-    newDate: data.date,
+    oldEndTime:   current.endTime,
+    newDate:      data.date,
     newStartTime: data.startTime,
-    newEndTime: data.endTime,
+    newEndTime:   data.endTime,
     newLocation,
-    reason: data.reason,
+    reason:       data.reason,
   });
 
   await sendSessionUpdated({
     sessionId,
     sessionName: current.title,
-    changeType: 'rescheduled',
-    newTime: `${data.date}T${data.startTime}`,
+    changeType:  'rescheduled',
+    newTime:     `${data.date}T${data.startTime}`,
     newLocation,
-    timestamp: new Date().toISOString(),
+    timestamp:   new Date().toISOString(),
   });
 
   return rescheduledSession;
 };
 
-// ── Sessie verwijderen ──
 export const deleteSession = async (sessionId: string) => {
   const result = await query(
     `DELETE FROM "Session" WHERE "sessionId" = $1 RETURNING *`,
