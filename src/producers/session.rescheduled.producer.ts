@@ -4,6 +4,7 @@ import { validateXml } from '../utils/xml.validator';
 
 type SessionRescheduledPayload = {
   sessionId: string;
+  sessionName: string;
   oldDate: string;
   oldStartTime: string;
   oldEndTime: string;
@@ -28,6 +29,7 @@ export const sendSessionRescheduled = async (
 
     const xml = buildXml('SessionRescheduled', {
       sessionId: payload.sessionId,
+      sessionName: payload.sessionName,
       oldDate: payload.oldDate,
       oldStartTime: payload.oldStartTime,
       oldEndTime: payload.oldEndTime,

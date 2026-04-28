@@ -200,19 +200,18 @@ export const updateSession = async (
     }
 
     await sendSessionUpdated({
-      sessionId:    updatedSession.sessionId,
-      sessionName:  updatedSession.title,
-      changeType:   'updated',
-      newTime:      `${updatedDate}T${updatedSession.startTime}`,
+      sessionId:   updatedSession.sessionId,
+      sessionName: updatedSession.title,
+      changeType:  'updated',
+      newTime:     `${updatedDate}T${updatedSession.startTime}`,
       newLocation,
-      timestamp:    new Date().toISOString(),
+      timestamp:   new Date().toISOString(),
     });
   }
 
   return updatedSession;
 };
 
-// ── Sessie annuleren ──
 export const cancelSession = async (sessionId: string) => {
   const current = await getSessionById(sessionId);
   if (!current) return null;
@@ -248,9 +247,10 @@ export const cancelSession = async (sessionId: string) => {
     const formattedDate = formatDate(cancelledSession.date);
 
     await sendSessionCancelled({
-      sessionId: cancelledSession.sessionId,
-      status:    'cancelled',
-      reason:    'Session cancelled',
+      sessionId:   cancelledSession.sessionId,
+      sessionName: cancelledSession.title,
+      status:      'cancelled',
+      reason:      'Session cancelled',
     });
 
     await sendSessionUpdated({
@@ -318,6 +318,7 @@ export const rescheduleSession = async (
 
   await sendSessionRescheduled({
     sessionId,
+    sessionName:  current.title,
     oldDate:      currentDate,
     oldStartTime: current.startTime,
     oldEndTime:   current.endTime,

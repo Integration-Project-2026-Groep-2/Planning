@@ -4,6 +4,7 @@ import { validateXml } from '../utils/xml.validator';
 
 type SessionCancelledPayload = {
   sessionId: string;
+  sessionName: string;
   status?: 'cancelled';
   reason?: string;
   participantIds?: string[];
@@ -22,6 +23,7 @@ export const sendSessionCancelled = async (
 
     const xml = buildXml('SessionCancelled', {
       sessionId: payload.sessionId,
+      sessionName: payload.sessionName,
       status: payload.status ?? 'cancelled',
       reason: payload.reason,
       participantIds: payload.participantIds?.length
