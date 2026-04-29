@@ -300,6 +300,15 @@ export const rescheduleSession = async (
     const location = await getLocationById(current.locationId);
     newLocation = location?.roomName || 'Onbekend';
   }
+const icsData = generateIcsBase64({
+  title: current.title,
+  date: data.date,
+  startTime: data.startTime,
+  endTime: data.endTime,
+  location: newLocation,
+  description: data.reason,
+  sessionId,
+});
 
   await sendSessionRescheduled({
     sessionId,
@@ -312,6 +321,7 @@ export const rescheduleSession = async (
     newEndTime:   data.endTime,
     newLocation,
     reason:       data.reason,
+    icsData,
   });
 
   await sendSessionUpdated({
