@@ -63,8 +63,9 @@ export const startCompanyConfirmedConsumer = async () => {
       console.error('[CRM] Fout in crm.company.confirmed:', err);
 
       await sendToDlq(
-        xml,
-        err instanceof Error ? err.message : 'Unknown error'
+         xml, 
+         err instanceof Error ? err.message : 'Unknown error', 
+         'crm.company.confirmed'
       );
 
       channel.ack(msg);

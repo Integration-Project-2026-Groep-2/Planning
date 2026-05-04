@@ -76,8 +76,9 @@ export const startUserUpdatedConsumer = async () => {
       console.error('[CRM] Fout in crm.user.updated:', err);
 
       await sendToDlq(
-        xml,
-        err instanceof Error ? err.message : 'Unknown error'
+        xml, 
+        err instanceof Error ? err.message : 'Unknown error', 
+        'crm.user.updated'
       );
 
       channel.ack(msg);

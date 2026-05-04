@@ -9,6 +9,7 @@ Alle berichten worden verstuurd via RabbitMQ exchanges:
 - datum formaat: YYYY-MM-DD  
 - tijd formaat: HH:mm:ss  
 - datetime formaat: ISO 8601  
+- ICS bestanden worden meegestuurd als base64 string in het veld `icsData`  
 
 ---
 
@@ -16,9 +17,9 @@ Alle berichten worden verstuurd via RabbitMQ exchanges:
 
 De Planning Service gebruikt exchange-based messaging:
 
-- Planning publiceert naar een exchange
-- Andere systemen binden hun eigen queue
-- Planning weet niet wie luistert → loosely coupled
+- Planning publiceert naar een exchange  
+- Andere systemen binden hun eigen queue  
+- Planning weet niet wie luistert → loosely coupled  
 
 Dit zorgt voor:
 - schaalbaarheid  
@@ -31,11 +32,11 @@ Dit zorgt voor:
 
 Voor elk uitgaand bericht:
 
-- XML wordt gevalideerd met `xml.validator`
+- XML wordt gevalideerd met `xml.validator`  
 - bij fout:
   - error wordt gelogd  
   - bericht wordt NIET verstuurd  
-  - bericht wordt naar DLQ gestuurd via `sendToDlq`
+  - bericht wordt naar DLQ gestuurd via `sendToDlq`  
 
 ---
 
@@ -43,9 +44,9 @@ Voor elk uitgaand bericht:
 
 Bij een fout in een producer of consumer:
 
-- Ongeldige berichten worden naar `planning.dlq` gestuurd
-- Errors worden gelogd
-- Consumer blijft draaien (geen crash)
+- Ongeldige berichten worden naar `planning.dlq` gestuurd  
+- Errors worden gelogd  
+- Consumer blijft draaien (geen crash)  
 
 ---
 
@@ -53,11 +54,11 @@ Bij een fout in een producer of consumer:
 
 Dubbele berichten worden herkend en genegeerd:
 
-- `src/utils/idempotency.ts` controleert via `ProcessedMessages`
+- `src/utils/idempotency.ts` controleert via `ProcessedMessages`  
 - Bij ontvangst:
-  - check of `messageId` al verwerkt is
+  - check of `messageId` al verwerkt is  
 - Na verwerking:
-  - `messageId` wordt opgeslagen
+  - `messageId` wordt opgeslagen  
 
 Dit voorkomt:
 - dubbele inserts  
@@ -76,7 +77,7 @@ Routing key: routing.heartbeat
 Root element: Heartbeat  
 
 Velden:
-- serviceId (planning)
+- serviceId (planning)  
 - timestamp  
 
 ---
@@ -158,6 +159,7 @@ Root element: SessionRescheduled
 
 Velden:
 - sessionId  
+- sessionName  
 - oldDate  
 - oldStartTime  
 - oldEndTime  
@@ -167,6 +169,7 @@ Velden:
 - newLocation (optioneel)  
 - reason (optioneel)  
 - participantIds[] (optioneel)  
+- icsData (optioneel) — base64 encoded ICS-bestand voor Outlook/kalender synchronisatie  
 - timestamp  
 
 Ontvangers:

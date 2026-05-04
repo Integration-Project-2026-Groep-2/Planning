@@ -3,34 +3,36 @@ import { buildXml } from '../utils/xml.builder';
 import { validateXml } from '../utils/xml.validator';
 
 type SessionCreatedPayload = {
-  sessionId: string;
-  title: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  location: string;
-  capacity: number;
-  status: 'active' | 'cancelled' | 'full' | 'concept';
+  sessionId:  string;
+  title:      string;
+  date:       string;
+  startTime:  string;
+  endTime:    string;
+  location:   string;
+  capacity:   number;
+  status:     'active' | 'cancelled' | 'full' | 'concept';
+  icsData:    string;   
   timestamp?: string;
 };
 
 export const sendSessionCreated = async (payload: SessionCreatedPayload) => {
   try {
-    const channel = getChannel();
+    const channel      = getChannel();
     const exchangeName = 'planning.topic';
-    const routingKey = 'planning.session.created';
+    const routingKey   = 'planning.session.created';
 
     await channel.assertExchange(exchangeName, 'topic', { durable: true });
 
     const xml = buildXml('SessionCreated', {
       sessionId: payload.sessionId,
-      title: payload.title,
-      date: payload.date,
+      title:     payload.title,
+      date:      payload.date,
       startTime: payload.startTime,
-      endTime: payload.endTime,
-      location: payload.location,
-      status: payload.status,
-      capacity: payload.capacity,
+      endTime:   payload.endTime,
+      location:  payload.location,
+      status:    payload.status,
+      capacity:  payload.capacity,
+      icsData:   payload.icsData,
       timestamp: payload.timestamp ?? new Date().toISOString(),
     });
 
@@ -42,7 +44,7 @@ export const sendSessionCreated = async (payload: SessionCreatedPayload) => {
 
     channel.publish(exchangeName, routingKey, Buffer.from(xml), {
       contentType: 'application/xml',
-      persistent: true,
+      persistent:  true,
     });
 
     console.log('[Producer] SessionCreated verzonden');

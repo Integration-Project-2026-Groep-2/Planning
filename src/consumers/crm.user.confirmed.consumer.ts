@@ -92,9 +92,9 @@ export const startUserConfirmedConsumer = async () => {
 
       await sendToDlq(
         xml,
-        err instanceof Error ? err.message : 'Unknown error'
-      );
-
+        err instanceof Error ? err.message : 'Unknown error',
+        'crm.user.confirmed'
+);
       channel.ack(msg);
     }
   });

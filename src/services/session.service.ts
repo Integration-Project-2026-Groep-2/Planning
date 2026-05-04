@@ -12,8 +12,8 @@ import {
 } from '../producers';
 import { getLocationById } from './location.service';
 import { createLog } from './changelog.service';
+import { generateIcsBase64 } from '../utils/ics.generator';
 
-// ── Hulpfunctie: controleer of locatie al bezet is op dat tijdslot ──
 const checkLocationConflict = async (
   locationId: string,
   date: string,
@@ -31,35 +31,27 @@ const checkLocationConflict = async (
        AND ($5::uuid IS NULL OR "sessionId" != $5)`,
     [locationId, date, startTime, endTime, excludeSessionId || null]
   );
-
   return result.rows.length > 0;
 };
 
-// ── Hulpfunctie: datum formatteren ──
 const formatDate = (date: Date | string): string => {
   return date instanceof Date
     ? date.toISOString().split('T')[0]
     : String(date).split('T')[0];
 };
 
-// ── Hulpfunctie: status mappen naar contractwaarden ──
 const mapSessionStatus = (
   status: string
 ): 'active' | 'cancelled' | 'full' | 'concept' => {
   switch (status) {
-    case 'actief':
-      return 'active';
-    case 'geannuleerd':
-      return 'cancelled';
-    case 'volzet':
-      return 'full';
+    case 'actief':      return 'active';
+    case 'geannuleerd': return 'cancelled';
+    case 'volzet':      return 'full';
     case 'concept':
-    default:
-      return 'concept';
+    default:            return 'concept';
   }
 };
 
-// ── Alle sessies ophalen ──
 export const getAllSessions = async () => {
   const result = await query(
     `SELECT * FROM "Session" ORDER BY "date", "startTime"`
@@ -67,7 +59,6 @@ export const getAllSessions = async () => {
   return result.rows;
 };
 
-// ── Één sessie ophalen op ID ──
 export const getSessionById = async (sessionId: string) => {
   const result = await query(
     `SELECT * FROM "Session" WHERE "sessionId" = $1`,
@@ -76,25 +67,18 @@ export const getSessionById = async (sessionId: string) => {
   return result.rows[0] || null;
 };
 
-// ── Nieuwe sessie aanmaken ──
 export const createSession = async (data: CreateSessionDTO) => {
   if (data.locationId) {
     const conflict = await checkLocationConflict(
-      data.locationId,
-      data.date,
-      data.startTime,
-      data.endTime
+      data.locationId, data.date, data.startTime, data.endTime
     );
-
-    if (conflict) {
-      throw new Error('LOCATION_CONFLICT');
-    }
+    if (conflict) throw new Error('LOCATION_CONFLICT');
   }
 
   const result = await query(
     `INSERT INTO "Session"
-      ("title", "description", "date", "startTime", "endTime", "status", "locationId", "capacity")
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      ("title", "description", "date", "startTime", "endTime", "status", "locationId", "capacity", "syncStatus")
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending')
      RETURNING *`,
     [
       data.title,
@@ -116,40 +100,41 @@ export const createSession = async (data: CreateSessionDTO) => {
     locationName = location?.roomName || 'Onbekend';
   }
 
+  const icsData = generateIcsBase64({
+    sessionId:   createdSession.sessionId,
+    title:       createdSession.title,
+    date:        formatDate(createdSession.date),
+    startTime:   createdSession.startTime,
+    endTime:     createdSession.endTime,
+    location:    locationName,
+    description: createdSession.description ?? undefined,
+  });
+
   await sendSessionCreated({
     sessionId: createdSession.sessionId,
-    title: createdSession.title,
-    date: formatDate(createdSession.date),
+    title:     createdSession.title,
+    date:      formatDate(createdSession.date),
     startTime: createdSession.startTime,
-    endTime: createdSession.endTime,
-    location: locationName,
-    capacity: createdSession.capacity,
-    status: mapSessionStatus(createdSession.status),
+    endTime:   createdSession.endTime,
+    location:  locationName,
+    capacity:  createdSession.capacity,
+    status:    mapSessionStatus(createdSession.status),
+    icsData,
   });
 
   return createdSession;
 };
 
 // ── Sessie wijzigen ──
-export const updateSession = async (
-  sessionId: string,
-  data: UpdateSessionDTO
-) => {
+export const updateSession = async (sessionId: string, data: UpdateSessionDTO) => {
   const current = await getSessionById(sessionId);
   if (!current) return null;
 
   if (data.locationId && data.date && data.startTime && data.endTime) {
     const conflict = await checkLocationConflict(
-      data.locationId,
-      data.date,
-      data.startTime,
-      data.endTime,
-      sessionId
+      data.locationId, data.date, data.startTime, data.endTime, sessionId
     );
-
-    if (conflict) {
-      throw new Error('LOCATION_CONFLICT');
-    }
+    if (conflict) throw new Error('LOCATION_CONFLICT');
   }
 
   const result = await query(
@@ -165,15 +150,8 @@ export const updateSession = async (
      WHERE "sessionId" = $9
      RETURNING *`,
     [
-      data.title,
-      data.description,
-      data.date,
-      data.startTime,
-      data.endTime,
-      data.status,
-      data.locationId,
-      data.capacity,
-      sessionId,
+      data.title, data.description, data.date, data.startTime,
+      data.endTime, data.status, data.locationId, data.capacity, sessionId,
     ]
   );
 
@@ -187,9 +165,9 @@ export const updateSession = async (
       sessionId,
       oldStartTime: `${currentDate} ${current.startTime}`,
       newStartTime: `${updatedDate} ${updatedSession.startTime}`,
-      oldEndTime: `${currentDate} ${current.endTime}`,
-      newEndTime: `${updatedDate} ${updatedSession.endTime}`,
-      reason: 'Sessie gewijzigd via PUT',
+      oldEndTime:   `${currentDate} ${current.endTime}`,
+      newEndTime:   `${updatedDate} ${updatedSession.endTime}`,
+      reason:       'Sessie gewijzigd via PUT',
     });
 
     let newLocation = 'Onbekend';
@@ -198,13 +176,18 @@ export const updateSession = async (
       newLocation = location?.roomName || 'Onbekend';
     }
 
+    // ── SessionUpdated: datum + tijden meesturen voor ICS ──
     await sendSessionUpdated({
-      sessionId: updatedSession.sessionId,
+      sessionId:   updatedSession.sessionId,
       sessionName: updatedSession.title,
-      changeType: 'updated',
-      newTime: `${updatedDate}T${updatedSession.startTime}`,
+      changeType:  'updated',
+      date:        updatedDate,
+      startTime:   updatedSession.startTime,
+      endTime:     updatedSession.endTime,
+      newTime:     `${updatedDate}T${updatedSession.startTime}`,
       newLocation,
-      timestamp: new Date().toISOString(),
+      description: updatedSession.description ?? undefined,
+      timestamp:   new Date().toISOString(),
     });
   }
 
@@ -233,40 +216,48 @@ export const cancelSession = async (sessionId: string) => {
       sessionId,
       oldStartTime: `${currentDate} ${current.startTime}`,
       newStartTime: null,
-      oldEndTime: `${currentDate} ${current.endTime}`,
-      newEndTime: null,
-      reason: 'Sessie geannuleerd',
+      oldEndTime:   `${currentDate} ${current.endTime}`,
+      newEndTime:   null,
+      reason:       'Sessie geannuleerd',
     });
 
-    let newLocation = 'Onbekend';
+    let locationName = 'Onbekend';
     if (cancelledSession.locationId) {
       const location = await getLocationById(cancelledSession.locationId);
-      newLocation = location?.roomName || 'Onbekend';
+      locationName = location?.roomName || 'Onbekend';
     }
 
-    const formattedDate = formatDate(cancelledSession.date);
-
+    // ── SessionCancelled: datum + tijden meesturen 
     await sendSessionCancelled({
-      sessionId: cancelledSession.sessionId,
+      sessionId:   cancelledSession.sessionId,
       sessionName: cancelledSession.title,
-      status: 'cancelled',
-      reason: 'Session cancelled',
+      date:        currentDate,
+      startTime:   current.startTime,
+      endTime:     current.endTime,
+      location:    locationName,
+      description: cancelledSession.description ?? undefined,
+      status:      'cancelled',
+      reason:      'Session cancelled',
     });
 
     await sendSessionUpdated({
-      sessionId: cancelledSession.sessionId,
+      sessionId:   cancelledSession.sessionId,
       sessionName: cancelledSession.title,
-      changeType: 'cancelled',
-      newTime: `${formattedDate}T${cancelledSession.startTime}`,
-      newLocation,
-      timestamp: new Date().toISOString(),
+      changeType:  'cancelled',
+      date:        currentDate,
+      startTime:   current.startTime,
+      endTime:     current.endTime,
+      newTime:     `${currentDate}T${current.startTime}`,
+      newLocation: locationName,
+      description: cancelledSession.description ?? undefined,
+      timestamp:   new Date().toISOString(),
     });
   }
 
   return cancelledSession;
 };
 
-// ── Sessie verzetten (reschedule) ──
+// ── Sessie verzetten  ──
 export const rescheduleSession = async (
   sessionId: string,
   data: RescheduleSessionDTO
@@ -276,16 +267,9 @@ export const rescheduleSession = async (
 
   if (current.locationId) {
     const conflict = await checkLocationConflict(
-      current.locationId,
-      data.date,
-      data.startTime,
-      data.endTime,
-      sessionId
+      current.locationId, data.date, data.startTime, data.endTime, sessionId
     );
-
-    if (conflict) {
-      throw new Error('LOCATION_CONFLICT');
-    }
+    if (conflict) throw new Error('LOCATION_CONFLICT');
   }
 
   const updated = await query(
@@ -304,9 +288,9 @@ export const rescheduleSession = async (
     sessionId,
     oldStartTime: `${currentDate} ${current.startTime}`,
     newStartTime: `${data.date} ${data.startTime}`,
-    oldEndTime: `${currentDate} ${current.endTime}`,
-    newEndTime: `${data.date} ${data.endTime}`,
-    reason: data.reason,
+    oldEndTime:   `${currentDate} ${current.endTime}`,
+    newEndTime:   `${data.date} ${data.endTime}`,
+    reason:       data.reason,
   });
 
   const rescheduledSession = updated.rows[0];
@@ -316,27 +300,41 @@ export const rescheduleSession = async (
     const location = await getLocationById(current.locationId);
     newLocation = location?.roomName || 'Onbekend';
   }
+const icsData = generateIcsBase64({
+  title: current.title,
+  date: data.date,
+  startTime: data.startTime,
+  endTime: data.endTime,
+  location: newLocation,
+  description: data.reason,
+  sessionId,
+});
 
   await sendSessionRescheduled({
     sessionId,
-    sessionName: current.title,
-    oldDate: currentDate,
+    sessionName:  current.title,
+    oldDate:      currentDate,
     oldStartTime: current.startTime,
-    oldEndTime: current.endTime,
-    newDate: data.date,
+    oldEndTime:   current.endTime,
+    newDate:      data.date,
     newStartTime: data.startTime,
-    newEndTime: data.endTime,
+    newEndTime:   data.endTime,
     newLocation,
-    reason: data.reason,
+    reason:       data.reason,
+    icsData,
   });
 
   await sendSessionUpdated({
     sessionId,
     sessionName: current.title,
-    changeType: 'rescheduled',
-    newTime: `${data.date}T${data.startTime}`,
+    changeType:  'rescheduled',
+    date:        data.date,
+    startTime:   data.startTime,
+    endTime:     data.endTime,
+    newTime:     `${data.date}T${data.startTime}`,
     newLocation,
-    timestamp: new Date().toISOString(),
+    description: current.description ?? undefined,
+    timestamp:   new Date().toISOString(),
   });
 
   return rescheduledSession;

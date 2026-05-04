@@ -15,6 +15,7 @@ type SessionRescheduledPayload = {
   reason?: string;
   participantIds?: string[];
   timestamp?: string;
+  icsData?: string;
 };
 
 export const sendSessionRescheduled = async (
@@ -42,6 +43,7 @@ export const sendSessionRescheduled = async (
         ? { participantId: payload.participantIds }
         : undefined,
       timestamp: payload.timestamp ?? new Date().toISOString(),
+      icsData: payload.icsData,
     });
 
     const isValid = validateXml(xml, 'SessionRescheduled');

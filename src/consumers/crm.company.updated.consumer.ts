@@ -68,10 +68,11 @@ export const startCompanyUpdatedConsumer = async () => {
     } catch (err) {
       console.error('[CRM] Fout in crm.company.updated:', err);
 
-      await sendToDlq(
-        xml,
-        err instanceof Error ? err.message : 'Unknown error'
-      );
+     await sendToDlq(
+        xml, 
+        err instanceof Error ? err.message : 'Unknown error', 
+        'crm.company.updated'
+    );
 
       channel.ack(msg);
     }
