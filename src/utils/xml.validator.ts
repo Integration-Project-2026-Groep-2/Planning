@@ -1,6 +1,6 @@
-import fs from 'fs';
 import path from 'path';
-import { parseXml } from 'libxmljs2';
+import { XMLParser } from 'fast-xml-parser';
+import * as validator from 'xsd-schema-validator';
 
 const schemaMap: Record<string, string> = {
   Heartbeat: 'controlroom.xsd',
@@ -14,14 +14,21 @@ const schemaMap: Record<string, string> = {
   ParticipantRegistered: 'session.xsd',
   PlanningSessionsAll: 'session.xsd',
 
-  PlanningLocationCreated: 'location.xsd',
-  PlanningLocationUpdated: 'location.xsd',
-  PlanningLocationDeleted: 'location.xsd',
+  LocationCreated: 'location.xsd',
+  LocationUpdated: 'location.xsd',
+  LocationDeleted: 'location.xsd',
   PlanningLocationsAll: 'location.xsd',
 
-  PlanningSpeakerCreated: 'speaker.xsd',
-  PlanningSpeakerUpdated: 'speaker.xsd',
-  PlanningSpeakerDeactivated: 'speaker.xsd',
+  PlanningLocationCreated: 'location.xsd',
+PlanningLocationUpdated: 'location.xsd',
+PlanningLocationDeleted: 'location.xsd',
+
+PlanningSpeakerCreated: 'speaker.xsd',
+PlanningSpeakerUpdated: 'speaker.xsd',
+PlanningSpeakerDeactivated: 'speaker.xsd',
+  SpeakerCreated: 'speaker.xsd',
+  SpeakerUpdated: 'speaker.xsd',
+  SpeakerDeactivated: 'speaker.xsd',
   PlanningSpeakersAll: 'speaker.xsd',
 
   FrontendLocationCreated: 'frontend.xsd',
@@ -55,15 +62,19 @@ const getSchemaPath = (rootElement: string): string | null => {
   return path.join(__dirname, '../schema', schemaFile);
 };
 
-export const validateXml = (xml: string, expectedRoot: string): boolean => {
+export const validateXml = async (
+  xml: string,
+  expectedRoot: string
+): Promise<boolean> => {
   try {
-    const xmlDoc = parseXml(xml);
-    const rootElement = xmlDoc.root()?.name();
+    const parser = new XMLParser({
+      ignoreAttributes: false,
+      ignoreDeclaration: true,
+      trimValues: true,
+    });
 
-    if (!rootElement) {
-      console.error('[XML Validator] Geen root element gevonden');
-      return false;
-    }
+    const parsed = parser.parse(xml);
+    const rootElement = Object.keys(parsed)[0];
 
     if (rootElement !== expectedRoot) {
       console.error(
@@ -79,20 +90,12 @@ export const validateXml = (xml: string, expectedRoot: string): boolean => {
       return false;
     }
 
-    if (!fs.existsSync(schemaPath)) {
-      console.error(`[XML Validator] XSD bestand niet gevonden: ${schemaPath}`);
-      return false;
-    }
+    const result = await validator.validateXML(xml, schemaPath);
 
-    const xsdContent = fs.readFileSync(schemaPath, 'utf-8');
-    const xsdDoc = parseXml(xsdContent, { baseUrl: schemaPath });
-
-    const isValid = xmlDoc.validate(xsdDoc);
-
-    if (!isValid) {
+    if (!result.valid) {
       console.error(
         `[XML Validator] XSD validatie mislukt voor '${rootElement}':`,
-        xmlDoc.validationErrors
+        result.messages
       );
       return false;
     }
