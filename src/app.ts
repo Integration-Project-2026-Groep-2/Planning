@@ -19,10 +19,6 @@ import {
   startLocationUpdatedConsumer,
   startLocationDeletedConsumer,
   startLocationsRequestedConsumer,
-  startFrontendSessionCreatedConsumer,
-  startFrontendSessionUpdatedConsumer,
-  startFrontendSessionCancelledConsumer,
-  startFrontendSessionsRequestedConsumer,
 } from './consumers';
 
 const app = express();
