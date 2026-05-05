@@ -1,5 +1,8 @@
 import { query } from '../db';
 import { CreateLocationDTO, UpdateLocationDTO } from '../models/location.model';
+import { sendLocationCreated }  from '../producers/planning.location.created.producer';
+import { sendLocationUpdated }  from '../producers/planning.location.updated.producer';
+import { sendLocationDeleted }  from '../producers/planning.location.deleted.producer';
 
 export const getAllLocations = async () => {
   const result = await query(
@@ -35,7 +38,18 @@ export const createLocation = async (data: CreateLocationDTO) => {
      RETURNING *`,
     [data.roomName, data.address || null, data.capacity, data.status || 'beschikbaar']
   );
-  return result.rows[0];
+
+  const created = result.rows[0];
+
+  await sendLocationCreated({
+    locationId: created.locationId,
+    roomName:   created.roomName,
+    capacity:   created.capacity,
+    address:    created.address,
+    status:     created.status,
+  });
+
+  return created;
 };
 
 export const updateLocation = async (locationId: string, data: UpdateLocationDTO) => {
@@ -49,7 +63,20 @@ export const updateLocation = async (locationId: string, data: UpdateLocationDTO
      RETURNING *`,
     [data.roomName, data.address, data.capacity, data.status, locationId]
   );
-  return result.rows[0] || null;
+
+  const updated = result.rows[0] || null;
+
+  if (updated) {
+    await sendLocationUpdated({
+      locationId: updated.locationId,
+      roomName:   updated.roomName,
+      capacity:   updated.capacity,
+      address:    updated.address,
+      status:     updated.status,
+    });
+  }
+
+  return updated;
 };
 
 export const deleteLocation = async (locationId: string) => {
@@ -57,5 +84,14 @@ export const deleteLocation = async (locationId: string) => {
     `DELETE FROM "Location" WHERE "locationId" = $1 RETURNING *`,
     [locationId]
   );
-  return result.rows[0] || null;
+
+  const deleted = result.rows[0] || null;
+
+  if (deleted) {
+    await sendLocationDeleted({
+      locationId: deleted.locationId,
+    });
+  }
+
+  return deleted;
 };
