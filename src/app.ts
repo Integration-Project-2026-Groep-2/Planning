@@ -19,6 +19,10 @@ import {
   startLocationUpdatedConsumer,
   startLocationDeletedConsumer,
   startLocationsRequestedConsumer,
+  startFrontendSessionCreatedConsumer,
+  startFrontendSessionUpdatedConsumer,
+  startFrontendSessionCancelledConsumer,
+  startFrontendSessionsRequestedConsumer,
 } from './consumers';
 
 const app = express();
@@ -55,6 +59,11 @@ const start = async () => {
     await startLocationUpdatedConsumer();
     await startLocationDeletedConsumer();
     await startLocationsRequestedConsumer();
+
+    await startFrontendSessionCreatedConsumer();
+    await startFrontendSessionUpdatedConsumer();
+    await startFrontendSessionCancelledConsumer();
+    await startFrontendSessionsRequestedConsumer();
   } catch (err) {
     console.warn('RabbitMQ niet bereikbaar — service start zonder RabbitMQ');
   }
