@@ -12,3 +12,7 @@ export { startFrontendSessionCreatedConsumer } from './frontend.session.created.
 export { startFrontendSessionUpdatedConsumer } from './frontend.session.updated.consumer';
 export { startFrontendSessionCancelledConsumer } from './frontend.session.cancelled.consumer';
 export { startFrontendSessionsRequestedConsumer } from './frontend.sessions.requested.consumer';
+export { startSpeakerCreatedConsumer }     from './frontend.speaker.created.consumer';
+export { startSpeakerUpdatedConsumer }     from './frontend.speaker.updated.consumer';
+export { startSpeakerDeactivatedConsumer } from './frontend.speaker.deactivated.consumer';
+export { startSpeakersRequestedConsumer }  from './frontend.speakers.requested.consumer';
