@@ -4,3 +4,7 @@ export { startUserDeactivatedConsumer } from './crm.user.deactivated.consumer';
 export { startCompanyConfirmedConsumer } from './crm.company.confirmed.consumer';
 export { startCompanyUpdatedConsumer } from './crm.company.updated.consumer';
 export { startCompanyDeactivatedConsumer } from './crm.company.deactivated.consumer';
+export { startFrontendSessionCreatedConsumer } from './frontend.session.created.consumer';
+export { startFrontendSessionUpdatedConsumer } from './frontend.session.updated.consumer';
+export { startFrontendSessionCancelledConsumer } from './frontend.session.cancelled.consumer';
+export { startFrontendSessionsRequestedConsumer } from './frontend.sessions.requested.consumer';

@@ -1,45 +1,61 @@
-import { Channel, ConsumeMessage } from 'amqplib';
+import { getChannel } from '../rabbitmq';
 import { parseXml } from '../utils/xml.parser';
-import { validateXml } from '../utils/xml.validator';
+import { z } from 'zod';
+import { isAlreadyProcessed, markAsProcessed } from '../utils/idempotency';
+import { sendToDlq } from '../utils/dlq';
 import { createSession } from '../services/session.service';
+import crypto from 'crypto';
 
-const QUEUE = 'frontend.session.created';
-const EXCHANGE = 'planning.topic';
-const ROUTING_KEY = 'planning.session.created';
-const DLQ = 'frontend.session.created.dlq';
+const schema = z.object({
+  sessionId: z.string().uuid(),
+  title: z.string(),
+  date: z.string(),
+  startTime: z.string(),
+  endTime: z.string(),
+  capacity: z.number(),
+  locationId: z.string().optional(),
+});
 
-export async function startFrontendSessionCreatedConsumer(channel: Channel) {
-  await channel.assertExchange(EXCHANGE, 'topic', { durable: true });
-  await channel.assertQueue(QUEUE, { durable: true, deadLetterExchange: DLQ });
-  await channel.bindQueue(QUEUE, EXCHANGE, ROUTING_KEY);
+export const startFrontendSessionCreatedConsumer = async () => {
+  const channel = getChannel();
 
-  channel.consume(QUEUE, async (msg: ConsumeMessage | null) => {
+  const exchange = 'session.topic';
+  const queue = 'planning.frontend.session.created';
+
+  await channel.assertExchange(exchange, 'topic', { durable: true });
+  await channel.assertQueue(queue, { durable: true });
+  await channel.bindQueue(queue, exchange, 'frontend.session.created');
+
+  channel.consume(queue, async (msg) => {
     if (!msg) return;
 
+    const xml = msg.content.toString();
+    const messageId = msg.properties.messageId || crypto.randomUUID();
+
     try {
-      const xml = msg.content.toString();
-      const isValid = validateXml(xml, 'SessionCreated');
-      if (!isValid) throw new Error('XML validatie mislukt');
+      const alreadyProcessed = await isAlreadyProcessed(messageId);
+      if (alreadyProcessed) {
+        channel.ack(msg);
+        return;
+      }
 
-      const parsed = await parseXml(xml);
-      const session = parsed.SessionCreated;
+      const data = await parseXml(xml, 'SessionCreated');
+      const session = schema.parse(data);
 
-      await createSession({
-        sessionId: session.sessionId[0],
-        title: session.title[0],
-        date: session.date[0],
-        startTime: session.startTime[0],
-        endTime: session.endTime[0],
-        location: session.location[0],
-        status: session.status[0],
-        capacity: parseInt(session.capacity[0]),
-      });
+      await createSession(session);
 
-      logger.info({ queue: QUEUE }, 'Sessie aangemaakt via frontend consumer');
+      await markAsProcessed(messageId);
+      console.log('[FRONTEND] Sessie aangemaakt');
       channel.ack(msg);
     } catch (err) {
-      logger.error({ queue: QUEUE, err }, 'Fout bij verwerken bericht');
-      channel.nack(msg, false, false); // naar DLQ
+      console.error('[FRONTEND] Fout in frontend.session.created:', err);
+
+      await sendToDlq(
+        xml,
+        err instanceof Error ? err.message : 'Unknown error',
+        'frontend.session.created'
+      );
+      channel.ack(msg);
     }
   });
-}
+};
