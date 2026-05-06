@@ -26,8 +26,6 @@ const sendHeartbeat = async () => {
       persistent: true,
     });
  
-    console.log(`[Heartbeat] Bericht verzonden op ${timestamp}`);
- 
   } catch (error) {
     console.error('[Heartbeat] Fout bij het verzonden:', error);
   }
