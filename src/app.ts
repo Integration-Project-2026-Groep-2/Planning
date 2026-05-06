@@ -8,9 +8,6 @@ import {
   startUserConfirmedConsumer,
   startUserUpdatedConsumer,
   startUserDeactivatedConsumer,
-  startCompanyConfirmedConsumer,
-  startCompanyUpdatedConsumer,
-  startCompanyDeactivatedConsumer,
   startFrontendSessionCreatedConsumer,
   startFrontendSessionUpdatedConsumer,
   startFrontendSessionCancelledConsumer,
@@ -45,10 +42,6 @@ const start = async () => {
     await startUserConfirmedConsumer();
     await startUserUpdatedConsumer();
     await startUserDeactivatedConsumer();
-
-    await startCompanyConfirmedConsumer();
-    await startCompanyUpdatedConsumer();
-    await startCompanyDeactivatedConsumer();
 
     await startLocationCreatedConsumer();
     await startLocationUpdatedConsumer();
