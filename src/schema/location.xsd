@@ -1,56 +1,62 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
-           elementFormDefault="unqualified"
-           version="1.0">
 
-  <xs:include schemaLocation="common.xsd"/>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
 
-  <xs:element name="PlanningLocationCreated">
+  <xs:element name="LocationCreated">
     <xs:complexType>
       <xs:sequence>
-        <xs:element name="locationId" type="UUIDType"/>
+        <xs:element name="locationId" type="xs:string" minOccurs="0"/>
         <xs:element name="roomName" type="xs:string"/>
-        <xs:element name="capacity" type="PositiveIntType"/>
-        <xs:element name="address" type="xs:string" minOccurs="0"/>
-        <xs:element name="status" type="LocationStatusType"/>
-        <xs:element name="timestamp" type="ISO8601DateTimeType" minOccurs="0"/>
+        <xs:element name="capacity" type="xs:int"/>
+        <xs:element name="address" type="xs:string"/>
+        <xs:element name="status" type="xs:string" minOccurs="0"/>
       </xs:sequence>
     </xs:complexType>
   </xs:element>
 
-  <xs:element name="PlanningLocationUpdated">
+  <xs:element name="LocationUpdated">
     <xs:complexType>
       <xs:sequence>
-        <xs:element name="locationId" type="UUIDType"/>
+        <xs:element name="locationId" type="xs:string"/>
         <xs:element name="roomName" type="xs:string"/>
-        <xs:element name="capacity" type="PositiveIntType"/>
-        <xs:element name="address" type="xs:string" minOccurs="0"/>
-        <xs:element name="status" type="LocationStatusType"/>
-        <xs:element name="timestamp" type="ISO8601DateTimeType" minOccurs="0"/>
+        <xs:element name="capacity" type="xs:int"/>
+        <xs:element name="address" type="xs:string"/>
+        <xs:element name="status" type="xs:string"/>
       </xs:sequence>
     </xs:complexType>
   </xs:element>
 
-  <xs:element name="PlanningLocationDeleted">
+  <xs:element name="LocationDeleted">
     <xs:complexType>
       <xs:sequence>
-        <xs:element name="locationId" type="UUIDType"/>
-        <xs:element name="timestamp" type="ISO8601DateTimeType" minOccurs="0"/>
+        <xs:element name="locationId" type="xs:string"/>
       </xs:sequence>
     </xs:complexType>
   </xs:element>
 
-  <xs:element name="PlanningLocationsAll">
+  <xs:element name="LocationsRequested">
+    <xs:complexType>
+      <xs:sequence/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="LocationsAll">
     <xs:complexType>
       <xs:sequence>
-        <xs:element name="location" minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="locations">
           <xs:complexType>
             <xs:sequence>
-              <xs:element name="locationId" type="UUIDType"/>
-              <xs:element name="roomName" type="xs:string"/>
-              <xs:element name="capacity" type="PositiveIntType"/>
-              <xs:element name="address" type="xs:string" minOccurs="0"/>
-              <xs:element name="status" type="LocationStatusType"/>
+              <xs:element name="location" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="locationId" type="xs:string"/>
+                    <xs:element name="roomName" type="xs:string"/>
+                    <xs:element name="capacity" type="xs:int"/>
+                    <xs:element name="address" type="xs:string"/>
+                    <xs:element name="status" type="xs:string" minOccurs="0"/>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
             </xs:sequence>
           </xs:complexType>
         </xs:element>
