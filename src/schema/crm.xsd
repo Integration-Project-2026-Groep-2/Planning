@@ -2,74 +2,56 @@
 
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
 
+  <!-- ========================================================= -->
+  <!-- UserConfirmed -->
+  <!-- CRM → Planning via contact.topic -->
+  <!-- ========================================================= -->
+
   <xs:element name="UserConfirmed">
     <xs:complexType>
       <xs:sequence>
-        <xs:element name="id" type="xs:string"/>
-        <xs:element name="email" type="xs:string"/>
-        <xs:element name="firstName" type="xs:string"/>
-        <xs:element name="lastName" type="xs:string"/>
-        <xs:element name="role" type="xs:string"/>
-        <xs:element name="isActive" type="xs:boolean"/>
+        <xs:element name="id"          type="xs:string"/>
+        <xs:element name="email"       type="xs:string"/>
+        <xs:element name="firstName"   type="xs:string"/>
+        <xs:element name="lastName"    type="xs:string"/>
+        <xs:element name="role"        type="xs:string"/>
+        <xs:element name="isActive"    type="xs:boolean"/>
         <xs:element name="gdprConsent" type="xs:boolean"/>
+        <xs:element name="confirmedAt" type="xs:dateTime" minOccurs="0"/>
       </xs:sequence>
     </xs:complexType>
   </xs:element>
+
+  <!-- ========================================================= -->
+  <!-- UserUpdated -->
+  <!-- CRM → Planning via contact.topic -->
+  <!-- ========================================================= -->
 
   <xs:element name="UserUpdated">
     <xs:complexType>
       <xs:sequence>
-        <xs:element name="id" type="xs:string"/>
-        <xs:element name="email" type="xs:string"/>
-        <xs:element name="firstName" type="xs:string"/>
-        <xs:element name="lastName" type="xs:string"/>
-        <xs:element name="role" type="xs:string"/>
-        <xs:element name="isActive" type="xs:boolean"/>
+        <xs:element name="id"          type="xs:string"/>
+        <xs:element name="email"       type="xs:string"/>
+        <xs:element name="firstName"   type="xs:string"/>
+        <xs:element name="lastName"    type="xs:string"/>
+        <xs:element name="role"        type="xs:string"/>
+        <xs:element name="isActive"    type="xs:boolean"/>
         <xs:element name="gdprConsent" type="xs:boolean"/>
+        <xs:element name="updatedAt"   type="xs:dateTime" minOccurs="0"/>
       </xs:sequence>
     </xs:complexType>
   </xs:element>
+
+  <!-- ========================================================= -->
+  <!-- UserDeactivated -->
+  <!-- CRM → Planning via contact.topic -->
+  <!-- ========================================================= -->
 
   <xs:element name="UserDeactivated">
     <xs:complexType>
       <xs:sequence>
-        <xs:element name="id" type="xs:string"/>
-        <xs:element name="email" type="xs:string"/>
-        <xs:element name="deactivatedAt" type="xs:dateTime"/>
-      </xs:sequence>
-    </xs:complexType>
-  </xs:element>
-
-  <xs:element name="CompanyConfirmed">
-    <xs:complexType>
-      <xs:sequence>
-        <xs:element name="id" type="xs:string"/>
-        <xs:element name="vatNumber" type="xs:string"/>
-        <xs:element name="name" type="xs:string"/>
-        <xs:element name="email" type="xs:string"/>
-        <xs:element name="isActive" type="xs:boolean"/>
-      </xs:sequence>
-    </xs:complexType>
-  </xs:element>
-
-  <xs:element name="CompanyUpdated">
-    <xs:complexType>
-      <xs:sequence>
-        <xs:element name="id" type="xs:string"/>
-        <xs:element name="vatNumber" type="xs:string"/>
-        <xs:element name="name" type="xs:string"/>
-        <xs:element name="email" type="xs:string"/>
-        <xs:element name="isActive" type="xs:boolean"/>
-      </xs:sequence>
-    </xs:complexType>
-  </xs:element>
-
-  <xs:element name="CompanyDeactivated">
-    <xs:complexType>
-      <xs:sequence>
-        <xs:element name="id" type="xs:string"/>
-        <xs:element name="vatNumber" type="xs:string" minOccurs="0"/>
-        <xs:element name="email" type="xs:string" minOccurs="0"/>
+        <xs:element name="id"            type="xs:string"/>
+        <xs:element name="email"         type="xs:string"/>
         <xs:element name="deactivatedAt" type="xs:dateTime"/>
       </xs:sequence>
     </xs:complexType>
