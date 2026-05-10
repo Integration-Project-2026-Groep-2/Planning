@@ -2,41 +2,56 @@
 
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
 
+  <!-- ========================================================= -->
+  <!-- PlanningUserCreated -->
+  <!-- Planning → CRM via user.topic -->
+  <!-- ========================================================= -->
+
   <xs:element name="PlanningUserCreated">
     <xs:complexType>
       <xs:sequence>
-        <xs:element name="id" type="xs:string"/>
-        <xs:element name="email" type="xs:string"/>
-        <xs:element name="firstName" type="xs:string"/>
-        <xs:element name="lastName" type="xs:string"/>
-        <xs:element name="role" type="xs:string"/>
-        <xs:element name="gdprConsent" type="xs:boolean"/>
+        <xs:element name="id"          type="xs:string"/>
+        <xs:element name="email"       type="xs:string"/>
+        <xs:element name="firstName"   type="xs:string"/>
+        <xs:element name="lastName"    type="xs:string"/>
+        <xs:element name="role"        type="xs:string"/>
+        <xs:element name="isActive"    type="xs:boolean"/>
         <xs:element name="phoneNumber" type="xs:string" minOccurs="0"/>
-        <xs:element name="company" type="xs:string" minOccurs="0"/>
+        <xs:element name="company"     type="xs:string" minOccurs="0"/>
       </xs:sequence>
     </xs:complexType>
   </xs:element>
+
+  <!-- ========================================================= -->
+  <!-- PlanningUserUpdated -->
+  <!-- Planning → CRM via user.topic -->
+  <!-- ========================================================= -->
 
   <xs:element name="PlanningUserUpdated">
     <xs:complexType>
       <xs:sequence>
-        <xs:element name="id" type="xs:string"/>
-        <xs:element name="email" type="xs:string"/>
-        <xs:element name="firstName" type="xs:string"/>
-        <xs:element name="lastName" type="xs:string"/>
-        <xs:element name="role" type="xs:string"/>
-        <xs:element name="gdprConsent" type="xs:boolean"/>
+        <xs:element name="id"          type="xs:string"/>
+        <xs:element name="email"       type="xs:string"/>
+        <xs:element name="firstName"   type="xs:string"/>
+        <xs:element name="lastName"    type="xs:string"/>
+        <xs:element name="role"        type="xs:string"/>
+        <xs:element name="isActive"    type="xs:boolean"/>
         <xs:element name="phoneNumber" type="xs:string" minOccurs="0"/>
-        <xs:element name="company" type="xs:string" minOccurs="0"/>
+        <xs:element name="company"     type="xs:string" minOccurs="0"/>
       </xs:sequence>
     </xs:complexType>
   </xs:element>
 
+  <!-- ========================================================= -->
+  <!-- PlanningUserDeactivated -->
+  <!-- Planning → CRM via user.topic -->
+  <!-- ========================================================= -->
+
   <xs:element name="PlanningUserDeactivated">
     <xs:complexType>
       <xs:sequence>
-        <xs:element name="id" type="xs:string"/>
-        <xs:element name="email" type="xs:string"/>
+        <xs:element name="id"            type="xs:string"/>
+        <xs:element name="email"         type="xs:string"/>
         <xs:element name="deactivatedAt" type="xs:dateTime"/>
       </xs:sequence>
     </xs:complexType>
