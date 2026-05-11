@@ -298,6 +298,71 @@ Gedrag:
 
 ---
 
+## frontend.session.created
+
+Exchange: session.topic (topic)  
+Routing key: frontend.session.created  
+Root element: SessionCreated  
+
+Gedrag:
+- maak nieuwe sessie aan via `createSession()`  
+- gegevens worden geparset en gevalideerd  
+- idempotency check  
+- bij succes: log "[FRONTEND] Sessie aangemaakt"  
+- bij fout → DLQ  
+
+Velden:
+- sessionId (uuid, verplicht)  
+- title (string, verplicht)  
+- date (YYYY-MM-DD, verplicht)  
+- startTime (HH:mm:ss, verplicht)  
+- endTime (HH:mm:ss, verplicht)  
+- capacity (number, verplicht)  
+- locationId (string, optioneel)  
+
+---
+
+## frontend.session.updated
+
+Exchange: session.topic (topic)  
+Routing key: frontend.session.updated  
+Root element: SessionUpdated  
+
+Gedrag:
+- update bestaande sessie via `updateSession()`  
+- velden zijn optioneel (alleen wijzigingen)  
+- idempotency check  
+- bij succes: log "[FRONTEND] Sessie bijgewerkt"  
+- bij fout → DLQ  
+
+Velden:
+- sessionId (uuid, verplicht)  
+- title (string, optioneel)  
+- date (YYYY-MM-DD, optioneel)  
+- startTime (HH:mm:ss, optioneel)  
+- endTime (HH:mm:ss, optioneel)  
+- capacity (number, optioneel)  
+- locationId (string, optioneel)  
+
+---
+
+## frontend.session.cancelled
+
+Exchange: session.topic (topic)  
+Routing key: frontend.session.cancelled  
+Root element: SessionCancelled  
+
+Gedrag:
+- annuleer sessie via `cancelSession()`  
+- idempotency check  
+- bij succes: log "[FRONTEND] Sessie geannuleerd"  
+- bij fout → DLQ  
+
+Velden:
+- sessionId (uuid, verplicht)  
+
+---
+
 # XML conventie
 
 - Root = PascalCase  

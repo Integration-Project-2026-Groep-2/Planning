@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <xs:simpleType name="idType">
+    <xs:restriction base="xs:string">
+      <xs:minLength value="1"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="emailType">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[^@\s]+@[^@\s]+\.[^@\s]+"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="roleType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="SPEAKER"/>
+      <xs:enumeration value="VISITOR"/>
+      <xs:enumeration value="ADMIN"/>
+      <xs:enumeration value="USER"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="statusType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="active"/>
+      <xs:enumeration value="cancelled"/>
+      <xs:enumeration value="full"/>
+      <xs:enumeration value="concept"/>
+      <xs:enumeration value="inactive"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="changeType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="updated"/>
+      <xs:enumeration value="rescheduled"/>
+      <xs:enumeration value="cancelled"/>
+      <xs:enumeration value="locationChanged"/>
+      <xs:enumeration value="timeChanged"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+</xs:schema>

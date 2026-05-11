@@ -69,8 +69,10 @@ export const updateUser = async (userId: string, data: UpdateUserDTO) => {
   const updated = result.rows[0] || null;
 
   if (updated) {
+    const idToSend = updated.crmMasterId ?? updated.userId;
+
     await sendPlanningUserUpdated({
-      id:        updated.userId,
+      id:        idToSend,
       email:     updated.email,
       firstName: updated.firstName,
       lastName:  updated.lastName,
@@ -90,8 +92,10 @@ export const deactivateUser = async (userId: string) => {
   const deactivated = result.rows[0] || null;
 
   if (deactivated) {
+    const idToSend = deactivated.crmMasterId ?? deactivated.userId;
+
     await sendPlanningUserDeactivated({
-      id:    deactivated.userId,
+      id:    idToSend,
       email: deactivated.email,
     });
   }

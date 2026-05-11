@@ -3,6 +3,9 @@ import { CreateSpeakerDTO, UpdateSpeakerDTO } from '../models/speaker.model';
 import { sendPlanningUserCreated }     from '../producers/planning.user.created.producer';
 import { sendPlanningUserUpdated }     from '../producers/planning.user.updated.producer';
 import { sendPlanningUserDeactivated } from '../producers/planning.user.deactivated.producer';
+import { sendSpeakerCreated }          from '../producers/planning.speaker.created.producer';
+import { sendSpeakerUpdated }          from '../producers/planning.speaker.updated.producer';
+import { sendSpeakerDeactivated }      from '../producers/planning.speaker.deactivated.producer';
 
 // ── Alle sprekers ophalen ──
 export const getAllSpeakers = async () => {
@@ -39,15 +42,26 @@ export const createSpeaker = async (data: CreateSpeakerDTO) => {
 
   const created = result.rows[0];
 
-  // ── Stuur planning.user.created naar exchange user.topic ──
+  // ── Stuur planning.user.created naar exchange user.topic (CRM) ──
   await sendPlanningUserCreated({
     id:          created.speakerId,
     email:       created.email,
     firstName:   created.firstName,
     lastName:    created.lastName,
-     role:        'SPEAKER',
+    role:        'SPEAKER',
     phoneNumber: created.phoneNumber,
     company:     created.company,
+  });
+
+  // ── Stuur planning.speaker.created naar exchange planning.topic (Frontend) ──
+  await sendSpeakerCreated({
+    speakerId:   created.speakerId,
+    firstName:   created.firstName,
+    lastName:    created.lastName,
+    email:       created.email,
+    phoneNumber: created.phoneNumber,
+    company:     created.company,
+    isActive:    true,
   });
 
   return created;
@@ -77,17 +91,29 @@ export const updateSpeaker = async (speakerId: string, data: UpdateSpeakerDTO) =
   const updated = result.rows[0] || null;
 
   if (updated) {
-    // ── Stuur planning.user.updated naar exchange user.topic ──
-await sendPlanningUserUpdated({
-  id:          updated.speakerId,
-  email:       updated.email,
-  firstName:   updated.firstName,
-  lastName:    updated.lastName,
-  role:        'SPEAKER',
-  phoneNumber: updated.phoneNumber,
-  company:     updated.company,
-});
+    // ── Stuur planning.user.updated naar exchange user.topic (CRM) ──
+    await sendPlanningUserUpdated({
+      id:          updated.speakerId,
+      email:       updated.email,
+      firstName:   updated.firstName,
+      lastName:    updated.lastName,
+      role:        'SPEAKER',
+      phoneNumber: updated.phoneNumber,
+      company:     updated.company,
+    });
+
+    // ── Stuur planning.speaker.updated naar exchange planning.topic (Frontend) ──
+    await sendSpeakerUpdated({
+      speakerId:   updated.speakerId,
+      firstName:   updated.firstName,
+      lastName:    updated.lastName,
+      email:       updated.email,
+      phoneNumber: updated.phoneNumber,
+      company:     updated.company,
+      isActive:    updated.isActive,
+    });
   }
+
   return updated;
 };
 
@@ -104,10 +130,17 @@ export const deactivateSpeaker = async (speakerId: string) => {
   const deactivated = result.rows[0] || null;
 
   if (deactivated) {
-    // ── Stuur planning.user.deactivated naar exchange user.topic ──
+    // ── Stuur planning.user.deactivated naar exchange user.topic (CRM) ──
     await sendPlanningUserDeactivated({
       id:    deactivated.speakerId,
       email: deactivated.email,
+    });
+
+    // ── Stuur planning.speaker.deactivated naar exchange planning.topic (Frontend) ──
+    await sendSpeakerDeactivated({
+      speakerId:     deactivated.speakerId,
+      email:         deactivated.email,
+      deactivatedAt: new Date().toISOString(),
     });
   }
 
