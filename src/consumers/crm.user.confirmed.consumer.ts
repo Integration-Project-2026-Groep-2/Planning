@@ -19,6 +19,7 @@ const schema = z.object({
   lastName:    z.string(),
   phone:       z.string().optional(),
   role:        z.string(),
+  companyId:   z.string().uuid().optional(),
   isActive:    z.preprocess(toBoolean, z.boolean()),
   gdprConsent: z.preprocess(toBoolean, z.boolean()),
   confirmedAt: z.string().optional(),
@@ -68,15 +69,28 @@ export const startUserConfirmedConsumer = async () => {
         }
       } else {
         // ── User (EVENT_MANAGER / VISITOR) afhandelen ──
-        // Sla de crmMasterId op bij de user die overeenkomt op email
-        await query(
-          `UPDATE "User"
-           SET "crmMasterId" = $1
-           WHERE "email" = $2
-             AND "crmMasterId" IS NULL`,
+        const existingUser = await query(
+          `SELECT "userId" FROM "User" WHERE "crmMasterId" = $1 OR "email" = $2 LIMIT 1`,
           [user.id, user.email]
         );
-        console.log('[CRM] crmMasterId opgeslagen bij user');
+
+        if (existingUser.rowCount && existingUser.rowCount > 0) {
+          await query(
+            `UPDATE "User"
+             SET "crmMasterId" = $1, "firstName" = $2, "lastName" = $3, "role" = $4, "isActive" = $5
+             WHERE "userId" = $6`,
+            [user.id, user.firstName, user.lastName, user.role, user.isActive, existingUser.rows[0].userId]
+          );
+          console.log('[CRM] User bijgewerkt met CRM data');
+        } else {
+          await query(
+            `INSERT INTO "User"
+              ("crmMasterId", "firstName", "lastName", "email", "role", "isActive")
+             VALUES ($1, $2, $3, $4, $5, $6)`,
+            [user.id, user.firstName, user.lastName, user.email, user.role, user.isActive]
+          );
+          console.log('[CRM] Nieuwe user aangemaakt vanuit CRM');
+        }
       }
 
       await markAsProcessed(messageId);

@@ -64,10 +64,6 @@ const schemaMap: Record<string, string> = {
   UserUpdated: 'crm.xsd',
   UserDeactivated: 'crm.xsd',
 
-  CompanyConfirmed: 'crm.xsd',
-  CompanyUpdated: 'crm.xsd',
-  CompanyDeactivated: 'crm.xsd',
-
   /*
    |--------------------------------------------------------------------------
    | PLANNING -> CRM

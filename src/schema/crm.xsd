@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:include schemaLocation="common.xsd"/>
 
   <!-- ========================================================= -->
   <!-- UserConfirmed -->
@@ -10,15 +11,17 @@
   <xs:element name="UserConfirmed">
     <xs:complexType>
       <xs:sequence>
-        <xs:element name="id"          type="xs:string"/>
-        <xs:element name="email"       type="xs:string"/>
+        <xs:element name="id"          type="UUIDType"/>
+        <xs:element name="email"       type="EmailType"/>
         <xs:element name="firstName"   type="xs:string"/>
         <xs:element name="lastName"    type="xs:string"/>
-        <xs:element name="phone"       type="xs:string"   minOccurs="0"/>
-        <xs:element name="role"        type="xs:string"/>
+        <xs:element name="phone"       type="xs:string"  minOccurs="0"/>
+        <xs:element name="role"        type="UserRoleType"/>
+        <xs:element name="companyId"   type="UUIDType"   minOccurs="0"/>
+        <xs:element name="badgeCode"   type="xs:string"  minOccurs="0"/>
         <xs:element name="isActive"    type="xs:boolean"/>
         <xs:element name="gdprConsent" type="xs:boolean"/>
-        <xs:element name="confirmedAt" type="xs:dateTime" minOccurs="0"/>
+        <xs:element name="confirmedAt" type="ISO8601DateTimeType"/>
       </xs:sequence>
     </xs:complexType>
   </xs:element>
@@ -30,17 +33,24 @@
 
   <xs:element name="UserUpdated">
     <xs:complexType>
-      <xs:sequence>
-        <xs:element name="id"          type="xs:string"/>
-        <xs:element name="email"       type="xs:string"/>
+      <xs:all>
+        <xs:element name="id"          type="UUIDType"/>
+        <xs:element name="email"       type="EmailType"/>
         <xs:element name="firstName"   type="xs:string"/>
         <xs:element name="lastName"    type="xs:string"/>
-        <xs:element name="phone"       type="xs:string"   minOccurs="0"/>
-        <xs:element name="role"        type="xs:string"/>
+        <xs:element name="phone"       type="xs:string"       minOccurs="0" nillable="true"/>
+        <xs:element name="street"      type="xs:string"       minOccurs="0" nillable="true"/>
+        <xs:element name="houseNumber" type="xs:string"       minOccurs="0" nillable="true"/>
+        <xs:element name="postalCode"  type="xs:string"       minOccurs="0" nillable="true"/>
+        <xs:element name="city"        type="xs:string"       minOccurs="0" nillable="true"/>
+        <xs:element name="country"     type="CountryCodeType" minOccurs="0" nillable="true"/>
+        <xs:element name="role"        type="FacturatieUserRoleType"/>
+        <xs:element name="companyId"   type="UUIDType"        minOccurs="0" nillable="true"/>
+        <xs:element name="badgeCode"   type="xs:string"       minOccurs="0" nillable="true"/>
         <xs:element name="isActive"    type="xs:boolean"/>
         <xs:element name="gdprConsent" type="xs:boolean"/>
-        <xs:element name="updatedAt"   type="xs:dateTime" minOccurs="0"/>
-      </xs:sequence>
+        <xs:element name="updatedAt"   type="ISO8601DateTimeType"/>
+      </xs:all>
     </xs:complexType>
   </xs:element>
 
@@ -52,9 +62,9 @@
   <xs:element name="UserDeactivated">
     <xs:complexType>
       <xs:sequence>
-        <xs:element name="id"            type="xs:string"/>
-        <xs:element name="email"         type="xs:string"/>
-        <xs:element name="deactivatedAt" type="xs:dateTime"/>
+        <xs:element name="id"            type="UUIDType"/>
+        <xs:element name="email"         type="EmailType"/>
+        <xs:element name="deactivatedAt" type="ISO8601DateTimeType"/>
       </xs:sequence>
     </xs:complexType>
   </xs:element>

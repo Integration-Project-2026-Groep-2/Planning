@@ -39,6 +39,7 @@ export const startUserDeactivatedConsumer = async () => {
       const data = await parseXml(xml, 'UserDeactivated');
       const user = schema.parse(data);
 
+      // ── Deactiveer Speaker ──
       await query(
         `UPDATE "Speaker"
          SET "isActive" = false
@@ -46,8 +47,16 @@ export const startUserDeactivatedConsumer = async () => {
         [user.id]
       );
 
+      // ── Deactiveer User ──
+      await query(
+        `UPDATE "User"
+         SET "isActive" = false
+         WHERE "crmMasterId" = $1`,
+        [user.id]
+      );
+
       await markAsProcessed(messageId);
-      console.log('[CRM] Speaker gedeactiveerd');
+      console.log('[CRM] User/Speaker gedeactiveerd');
       channel.ack(msg);
     } catch (err) {
       console.error('[CRM] Fout in crm.user.deactivated:', err);

@@ -40,55 +40,57 @@ describe('XML XSD validation', () => {
 
   it('location.xsd - PlanningLocationCreated', async () => {
     const xml = `
-      <PlanningLocationCreated>
+      <LocationCreated>
         <locationId>123e4567-e89b-12d3-a456-426614174000</locationId>
         <roomName>Zaal A</roomName>
         <capacity>100</capacity>
         <status>beschikbaar</status>
-      </PlanningLocationCreated>
+      </LocationCreated>
     `;
 
-    await expect(validateXml(xml, 'PlanningLocationCreated')).resolves.toBe(true);
+    await expect(validateXml(xml, 'LocationCreated')).resolves.toBe(true);
   });
 
   it('speaker.xsd - PlanningSpeakerCreated', async () => {
     const xml = `
-      <PlanningSpeakerCreated>
+      <SpeakerCreated>
         <speakerId>123e4567-e89b-12d3-a456-426614174000</speakerId>
         <firstName>Jan</firstName>
         <lastName>Jansen</lastName>
         <email>jan@test.com</email>
         <isActive>true</isActive>
-      </PlanningSpeakerCreated>
+      </SpeakerCreated>
     `;
 
-    await expect(validateXml(xml, 'PlanningSpeakerCreated')).resolves.toBe(true);
+    await expect(validateXml(xml, 'SpeakerCreated')).resolves.toBe(true);
   });
 
   it('frontend.xsd - FrontendSessionCreated', async () => {
     const xml = `
-      <FrontendSessionCreated>
+      <SessionCreated>
+        <sessionId>123e4567-e89b-12d3-a456-426614174000</sessionId>
         <title>Frontend Test Session</title>
         <date>2026-05-20</date>
         <startTime>10:00:00</startTime>
         <endTime>12:00:00</endTime>
         <capacity>50</capacity>
-      </FrontendSessionCreated>
+      </SessionCreated>
     `;
 
-    await expect(validateXml(xml, 'FrontendSessionCreated')).resolves.toBe(true);
+    await expect(validateXml(xml, 'SessionCreated')).resolves.toBe(true);
   });
 
   it('crm.xsd - UserConfirmed', async () => {
     const xml = `
       <UserConfirmed>
-        <id>123e4567-e89b-12d3-a456-426614174000</id>
+        <id>123e4567-e89b-42d3-a456-426614174000</id>
         <email>user@test.com</email>
         <firstName>Yasmine</firstName>
         <lastName>Test</lastName>
         <role>SPEAKER</role>
         <isActive>true</isActive>
         <gdprConsent>true</gdprConsent>
+        <confirmedAt>2026-05-11T19:00:00Z</confirmedAt>
       </UserConfirmed>
     `;
 
