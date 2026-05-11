@@ -4,6 +4,7 @@ import {
   registerParticipant,
   cancelRegistration,
 } from '../services/registration.service';
+import { query } from '../db';
 
 const router = Router({ mergeParams: true });
 
@@ -15,6 +16,23 @@ const RegisterSchema = z.object({
 
 const CancelSchema = z.object({
   participantId: z.string().uuid('participantId moet een geldig UUID zijn'),
+});
+
+// ── GET /sessions/:id/registrations ──
+router.get('/', async (req: Request, res: Response) => {
+  try {
+    const result = await query(
+      `SELECT r.*, p."firstName", p."lastName", p."email", p."company"
+       FROM "Registration" r
+       JOIN "Participant" p ON r."participantId" = p."participantId"
+       WHERE r."sessionId" = $1
+       ORDER BY r."registrationTime" DESC`,
+      [req.params.id]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Fout bij ophalen registraties' });
+  }
 });
 
 // ── POST /sessions/:id/register ──
