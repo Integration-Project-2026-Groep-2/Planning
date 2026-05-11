@@ -133,7 +133,10 @@
     <xs:complexType>
       <xs:sequence>
         <xs:element name="sessionId"            type="xs:string"/>
+        <xs:element name="crmMasterId"          type="xs:string"   minOccurs="0"/>
         <xs:element name="currentRegistrations" type="xs:int"/>
+        <xs:element name="capacity"             type="xs:int"      minOccurs="0"/>
+        <xs:element name="registrationTime"     type="xs:dateTime" minOccurs="0"/>
         <xs:element name="timestamp"            type="xs:dateTime" minOccurs="0"/>
       </xs:sequence>
     </xs:complexType>
@@ -204,8 +207,8 @@
       </xs:sequence>
     </xs:complexType>
   </xs:element>
-  
-<!-- ========================================================= -->
+
+  <!-- ========================================================= -->
   <!-- FrontendSessionCancelled -->
   <!-- Frontend → Planning -->
   <!-- ========================================================= -->
@@ -215,6 +218,23 @@
       <xs:sequence>
         <xs:element name="sessionId" type="xs:string"/>
         <xs:element name="reason"    type="xs:string" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- ========================================================= -->
+  <!-- RegistrationCreated -->
+  <!-- Frontend → Planning -->
+  <!-- ========================================================= -->
+
+  <xs:element name="RegistrationCreated">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="sessionId" type="xs:string"/>
+        <xs:element name="firstName" type="xs:string"/>
+        <xs:element name="lastName"  type="xs:string"/>
+        <xs:element name="email"     type="xs:string"/>
+        <xs:element name="company"   type="xs:string" minOccurs="0"/>
       </xs:sequence>
     </xs:complexType>
   </xs:element>

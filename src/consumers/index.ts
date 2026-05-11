@@ -13,3 +13,4 @@ export { startSpeakerCreatedConsumer }     from './frontend.speaker.created.cons
 export { startSpeakerUpdatedConsumer }     from './frontend.speaker.updated.consumer';
 export { startSpeakerDeactivatedConsumer } from './frontend.speaker.deactivated.consumer';
 export { startSpeakersRequestedConsumer }  from './frontend.speakers.requested.consumer';
+export { startRegistrationCreatedConsumer } from './frontend.registration.created.consumer';
