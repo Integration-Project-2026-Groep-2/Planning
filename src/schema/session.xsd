@@ -113,16 +113,17 @@
   <!-- Planning → Frontend / Mailing -->
   <!-- ========================================================= -->
 
-  <xs:element name="SessionFull">
-    <xs:complexType>
-      <xs:sequence>
-        <xs:element name="sessionId"            type="xs:string"/>
-        <xs:element name="currentRegistrations" type="xs:int"      minOccurs="0"/>
-        <xs:element name="crmMasterId"          type="xs:string"   minOccurs="0"/>
-        <xs:element name="timestamp"            type="xs:dateTime" minOccurs="0"/>
-      </xs:sequence>
-    </xs:complexType>
-  </xs:element>
+    <xs:element name="SessionFull">
+      <xs:complexType>
+        <xs:sequence>
+          <xs:element name="sessionId"            type="xs:string"/>
+          <xs:element name="currentRegistrations" type="xs:int"      minOccurs="0"/>
+          <xs:element name="capacity"             type="xs:int"      minOccurs="0"/>
+          <xs:element name="crmMasterId"          type="xs:string"   minOccurs="0"/>
+          <xs:element name="timestamp"            type="xs:dateTime" minOccurs="0"/>
+        </xs:sequence>
+      </xs:complexType>
+    </xs:element>
 
   <!-- ========================================================= -->
   <!-- ParticipantRegistered -->
