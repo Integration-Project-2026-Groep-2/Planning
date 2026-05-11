@@ -7,19 +7,19 @@ import { updateSession } from '../services/session.service';
 import crypto from 'crypto';
 
 const schema = z.object({
-  sessionId: z.string().uuid(),
-  title: z.string().optional(),
-  date: z.string().optional(),
-  startTime: z.string().optional(),
-  endTime: z.string().optional(),
-  capacity: z.number().optional(),
+  sessionId:  z.string().uuid(),
+  title:      z.string().optional(),
+  date:       z.string().optional(),
+  startTime:  z.string().optional(),
+  endTime:    z.string().optional(),
+  capacity:   z.preprocess((v) => v ? Number(v) : undefined, z.number().optional()),
   locationId: z.string().optional(),
 });
 
 export const startFrontendSessionUpdatedConsumer = async () => {
   const channel = getChannel();
 
-  const exchange = 'session.topic';
+  const exchange = 'frontend.topic';
   const queue = 'planning.session.updated';
 
   await channel.assertExchange(exchange, 'topic', { durable: true });
@@ -39,7 +39,7 @@ export const startFrontendSessionUpdatedConsumer = async () => {
         return;
       }
 
-      const data = await parseXml(xml, 'SessionUpdated');
+      const data = await parseXml(xml, 'FrontendSessionUpdated');
       const session = schema.parse(data);
 
       await updateSession(session.sessionId, session);

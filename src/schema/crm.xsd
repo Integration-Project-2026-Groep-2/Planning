@@ -14,6 +14,7 @@
         <xs:element name="email"       type="xs:string"/>
         <xs:element name="firstName"   type="xs:string"/>
         <xs:element name="lastName"    type="xs:string"/>
+        <xs:element name="phone"       type="xs:string"   minOccurs="0"/>
         <xs:element name="role"        type="xs:string"/>
         <xs:element name="isActive"    type="xs:boolean"/>
         <xs:element name="gdprConsent" type="xs:boolean"/>
@@ -34,6 +35,7 @@
         <xs:element name="email"       type="xs:string"/>
         <xs:element name="firstName"   type="xs:string"/>
         <xs:element name="lastName"    type="xs:string"/>
+        <xs:element name="phone"       type="xs:string"   minOccurs="0"/>
         <xs:element name="role"        type="xs:string"/>
         <xs:element name="isActive"    type="xs:boolean"/>
         <xs:element name="gdprConsent" type="xs:boolean"/>

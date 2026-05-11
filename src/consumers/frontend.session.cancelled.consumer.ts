@@ -8,13 +8,14 @@ import crypto from 'crypto';
 
 const schema = z.object({
   sessionId: z.string().uuid(),
+  reason:    z.string().optional(),
 });
 
 export const startFrontendSessionCancelledConsumer = async () => {
   const channel = getChannel();
 
-  const exchange = 'session.topic';
-  const queue = 'planning.session.cancelled';
+  const exchange = 'frontend.topic';
+  const queue    = 'planning.session.cancelled';
 
   await channel.assertExchange(exchange, 'topic', { durable: true });
   await channel.assertQueue(queue, { durable: true });
@@ -23,7 +24,7 @@ export const startFrontendSessionCancelledConsumer = async () => {
   channel.consume(queue, async (msg) => {
     if (!msg) return;
 
-    const xml = msg.content.toString();
+    const xml       = msg.content.toString();
     const messageId = msg.properties.messageId || crypto.randomUUID();
 
     try {
@@ -33,7 +34,7 @@ export const startFrontendSessionCancelledConsumer = async () => {
         return;
       }
 
-      const data = await parseXml(xml, 'SessionCancelled');
+      const data    = await parseXml(xml, 'FrontendSessionCancelled');
       const session = schema.parse(data);
 
       await cancelSession(session.sessionId);
@@ -43,7 +44,6 @@ export const startFrontendSessionCancelledConsumer = async () => {
       channel.ack(msg);
     } catch (err) {
       console.error('[FRONTEND] Fout in frontend.session.cancelled:', err);
-
       await sendToDlq(
         xml,
         err instanceof Error ? err.message : 'Unknown error',
