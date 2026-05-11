@@ -21,7 +21,7 @@ const schema = z.object({
   role: z.string(),
   isActive: z.preprocess(toBoolean, z.boolean()),
   gdprConsent: z.preprocess(toBoolean, z.boolean()),
-  updatedAt: z.string(),
+  updatedAt: z.string().optional(),
 });
 
 export const startUserUpdatedConsumer = async () => {
