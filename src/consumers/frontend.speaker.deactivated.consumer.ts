@@ -14,7 +14,7 @@ export const startSpeakerDeactivatedConsumer = async () => {
   const channel = getChannel();
 
   const exchange = 'frontend.topic';
-  const queue    = 'planning.frontend.speaker.deactivated';
+  const queue    = 'planning.speaker.deactivated';
 
   await channel.assertExchange(exchange, 'topic', { durable: true });
   await channel.assertQueue(queue, { durable: true });

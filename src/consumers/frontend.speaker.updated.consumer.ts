@@ -19,7 +19,7 @@ export const startSpeakerUpdatedConsumer = async () => {
   const channel = getChannel();
 
   const exchange = 'frontend.topic';
-  const queue    = 'planning.frontend.speaker.updated';
+  const queue    = 'planning.speaker.updated';
 
   await channel.assertExchange(exchange, 'topic', { durable: true });
   await channel.assertQueue(queue, { durable: true });

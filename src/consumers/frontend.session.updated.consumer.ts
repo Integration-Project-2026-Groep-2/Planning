@@ -20,7 +20,7 @@ export const startFrontendSessionUpdatedConsumer = async () => {
   const channel = getChannel();
 
   const exchange = 'session.topic';
-  const queue = 'planning.frontend.session.updated';
+  const queue = 'planning.session.updated';
 
   await channel.assertExchange(exchange, 'topic', { durable: true });
   await channel.assertQueue(queue, { durable: true });

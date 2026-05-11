@@ -14,7 +14,7 @@ export const startFrontendSessionCancelledConsumer = async () => {
   const channel = getChannel();
 
   const exchange = 'session.topic';
-  const queue = 'planning.frontend.session.cancelled';
+  const queue = 'planning.session.cancelled';
 
   await channel.assertExchange(exchange, 'topic', { durable: true });
   await channel.assertQueue(queue, { durable: true });

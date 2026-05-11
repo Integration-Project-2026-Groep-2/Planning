@@ -18,7 +18,7 @@ export const startLocationUpdatedConsumer = async () => {
   const channel = getChannel();
 
   const exchange = 'frontend.topic';
-  const queue    = 'planning.frontend.location.updated';
+  const queue    = 'planning.location.updated';
 
   await channel.assertExchange(exchange, 'topic', { durable: true });
   await channel.assertQueue(queue, { durable: true });
