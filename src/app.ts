@@ -20,6 +20,7 @@ import {
   startSpeakerUpdatedConsumer,
   startSpeakerDeactivatedConsumer,
   startSpeakersRequestedConsumer,
+  startRegistrationCreatedConsumer,
 } from './consumers';
 
 const app = express();
@@ -57,6 +58,8 @@ const start = async () => {
     await startSpeakerUpdatedConsumer();
     await startSpeakerDeactivatedConsumer();
     await startSpeakersRequestedConsumer();
+
+    await startRegistrationCreatedConsumer();
   } catch (err) {
     console.warn('RabbitMQ niet bereikbaar — service start zonder RabbitMQ');
   }
