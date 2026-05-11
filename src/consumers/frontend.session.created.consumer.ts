@@ -7,20 +7,20 @@ import { createSession } from '../services/session.service';
 import crypto from 'crypto';
 
 const schema = z.object({
-  sessionId: z.string().uuid(),
-  title: z.string(),
-  date: z.string(),
-  startTime: z.string(),
-  endTime: z.string(),
-  capacity: z.number(),
+  sessionId:  z.string().uuid().optional(),
+  title:      z.string(),
+  date:       z.string(),
+  startTime:  z.string(),
+  endTime:    z.string(),
+  capacity:   z.preprocess((v) => Number(v), z.number().int().positive()),
   locationId: z.string().optional(),
 });
 
 export const startFrontendSessionCreatedConsumer = async () => {
   const channel = getChannel();
 
-  const exchange = 'session.topic';
-  const queue = 'planning.session.created';
+  const exchange = 'frontend.topic';
+  const queue    = 'planning.session.created';
 
   await channel.assertExchange(exchange, 'topic', { durable: true });
   await channel.assertQueue(queue, { durable: true });
@@ -29,7 +29,7 @@ export const startFrontendSessionCreatedConsumer = async () => {
   channel.consume(queue, async (msg) => {
     if (!msg) return;
 
-    const xml = msg.content.toString();
+    const xml       = msg.content.toString();
     const messageId = msg.properties.messageId || crypto.randomUUID();
 
     try {
@@ -39,17 +39,23 @@ export const startFrontendSessionCreatedConsumer = async () => {
         return;
       }
 
-      const data = await parseXml(xml, 'SessionCreated');
+      const data    = await parseXml(xml, 'SessionCreated');
       const session = schema.parse(data);
 
-      await createSession(session);
+      await createSession({
+        title:      session.title,
+        date:       session.date,
+        startTime:  session.startTime,
+        endTime:    session.endTime,
+        capacity:   session.capacity,
+        locationId: session.locationId,
+      });
 
       await markAsProcessed(messageId);
       console.log('[FRONTEND] Sessie aangemaakt');
       channel.ack(msg);
     } catch (err) {
       console.error('[FRONTEND] Fout in frontend.session.created:', err);
-
       await sendToDlq(
         xml,
         err instanceof Error ? err.message : 'Unknown error',

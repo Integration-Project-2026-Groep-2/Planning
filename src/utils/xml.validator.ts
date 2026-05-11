@@ -26,6 +26,8 @@ const schemaMap: Record<string, string> = {
   ParticipantRegistered: 'session.xsd',
   SessionsRequested: 'session.xsd',
   SessionsAll: 'session.xsd',
+  FrontendSessionUpdated: 'session.xsd',
+  FrontendSessionCancelled: 'session.xsd',
 
   /*
    |--------------------------------------------------------------------------
