@@ -24,6 +24,9 @@ import {
     startRegistrationCreatedConsumer,
 } from "./consumers";
 
+import { setupRabbitMQ } from "./rabbitmq/setup";
+import { waitForDatabase } from "./utils/db/wait-for-db";
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -38,8 +41,18 @@ app.use("/api", routes);
 
 const start = async () => {
     try {
+        // 1. Wacht tot database bereikbaar is
+        await waitForDatabase();
+        
+        // 2. Voer migraties uit
         await migrate();
+
+        // 3. Verbind met RabbitMQ
         await connectRabbitMQ();
+        
+        // 4. Configureer exchanges en queues centraal
+        await setupRabbitMQ();
+
         startHeartbeatProducer();
 
         await startUserConfirmedConsumer();
@@ -62,10 +75,9 @@ const start = async () => {
         await startSpeakersRequestedConsumer();
 
         await startRegistrationCreatedConsumer();
-    } catch (err) {
-        console.warn(
-            "RabbitMQ niet bereikbaar — service start zonder RabbitMQ",
-        );
+    } catch (err: any) {
+        console.error("[FATAL] Kritieke fout tijdens opstarten:", err.message);
+        process.exit(1); // Stop de service zodat Docker/PM2 kan herstarten
     }
 
     app.listen(PORT, () => {

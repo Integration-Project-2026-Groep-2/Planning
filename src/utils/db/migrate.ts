@@ -15,9 +15,10 @@ export const migrate = async () => {
     const sql = fs.readFileSync(getSchemaPath(), "utf-8");
     try {
         await pool.query(sql);
-        console.log("Alle tabellen aangemaakt!");
-    } catch (err) {
-        console.error("Fout bij aanmaken tabellen:", err);
+        console.log("[DB] Alle tabellen aangemaakt!");
+    } catch (err: any) {
+        console.error("[DB] Fout bij aanmaken tabellen:", err);
+        throw new Error(`Migratie mislukt: ${err.message}`);
     }
 };
 
