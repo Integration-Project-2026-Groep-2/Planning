@@ -1,12 +1,24 @@
 import "dotenv/config";
 import { Pool } from "pg";
 
+const dbHost = process.env.PLANNING_DB_HOST || process.env.DB_HOST || "localhost";
+const dbPort = Number(process.env.PLANNING_DB_PORT || process.env.DB_PORT || 5432);
+const dbName = process.env.PLANNING_DB_NAME || process.env.DB_NAME || "planning_db";
+const dbUser = process.env.PLANNING_DB_USER || process.env.DB_USER || "postgres";
+
+console.log("[DB] Configuratie geladen:");
+console.log(` - Host: ${dbHost}`);
+console.log(` - Port: ${dbPort}`);
+console.log(` - Database: ${dbName}`);
+console.log(` - User: ${dbUser}`);
+
 const pool = new Pool({
-    host: process.env.PLANNING_DB_HOST || process.env.DB_HOST,
-    port: Number(process.env.PLANNING_DB_PORT || process.env.DB_PORT),
-    database: process.env.PLANNING_DB_NAME || process.env.DB_NAME,
-    user: process.env.PLANNING_DB_USER || process.env.DB_USER,
-    password: process.env.PLANNING_DB_PASSWORD || process.env.DB_PASSWORD,
+    host: dbHost,
+    port: dbPort,
+    database: dbName,
+    user: dbUser,
+    password:
+        process.env.PLANNING_DB_PASSWORD || process.env.DB_PASSWORD || "postgres",
 });
 
 const MAX_RETRIES = 5;
