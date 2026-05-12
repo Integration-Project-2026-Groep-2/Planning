@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { query } from '../db';
 import { isAlreadyProcessed, markAsProcessed } from '../utils/idempotency';
 import { sendToDlq } from '../utils/dlq';
+import { log } from '../utils/logger';
 import crypto from 'crypto';
 
 const toBoolean = (value: unknown) => {
@@ -65,7 +66,7 @@ export const startUserConfirmedConsumer = async () => {
              VALUES ($1, $2, $3, $4, $5, $6)`,
             [user.id, user.firstName, user.lastName, user.email, user.phone || null, user.isActive]
           );
-          console.log('[CRM] Speaker aangemaakt');
+          log.info('[CRM] Speaker aangemaakt');
         }
       } else {
         // ── User (EVENT_MANAGER / VISITOR) afhandelen ──
@@ -81,7 +82,7 @@ export const startUserConfirmedConsumer = async () => {
              WHERE "userId" = $6`,
             [user.id, user.firstName, user.lastName, user.role, user.isActive, existingUser.rows[0].userId]
           );
-          console.log('[CRM] User bijgewerkt met CRM data');
+          log.info('[CRM] User bijgewerkt met CRM data');
         } else {
           await query(
             `INSERT INTO "User"
@@ -89,14 +90,14 @@ export const startUserConfirmedConsumer = async () => {
              VALUES ($1, $2, $3, $4, $5, $6)`,
             [user.id, user.firstName, user.lastName, user.email, user.role, user.isActive]
           );
-          console.log('[CRM] Nieuwe user aangemaakt vanuit CRM');
+          log.info('[CRM] Nieuwe user aangemaakt vanuit CRM');
         }
       }
 
       await markAsProcessed(messageId);
       channel.ack(msg);
     } catch (err) {
-      console.error('[CRM] Fout in crm.user.confirmed:', err);
+      log.error('[CRM] Fout in crm.user.confirmed:', err);
       await sendToDlq(
         xml,
         err instanceof Error ? err.message : 'Unknown error',

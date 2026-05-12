@@ -3,6 +3,7 @@ import { parseXml } from '../utils/xml.parser';
 import { z } from 'zod';
 import { isAlreadyProcessed, markAsProcessed } from '../utils/idempotency';
 import { sendToDlq } from '../utils/dlq';
+import { log } from '../utils/logger';
 import { createSession } from '../services/session.service';
 import crypto from 'crypto';
 
@@ -52,10 +53,10 @@ export const startFrontendSessionCreatedConsumer = async () => {
       });
 
       await markAsProcessed(messageId);
-      console.log('[FRONTEND] Sessie aangemaakt');
+      log.info('[FRONTEND] Sessie aangemaakt');
       channel.ack(msg);
     } catch (err) {
-      console.error('[FRONTEND] Fout in frontend.session.created:', err);
+      log.error('[FRONTEND] Fout in frontend.session.created:', err);
       await sendToDlq(
         xml,
         err instanceof Error ? err.message : 'Unknown error',
