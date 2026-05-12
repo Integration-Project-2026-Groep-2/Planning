@@ -1,6 +1,7 @@
 import { getChannel } from '../rabbitmq';
 import { buildXml } from '../utils/xml.builder';
 import { validateXml } from '../utils/xml.validator';
+import { log } from '../utils/logger';
 import { generateIcsBase64 } from '../utils/ics.generator';
 
 type SessionUpdatedPayload = {
@@ -54,7 +55,7 @@ export const sendSessionUpdated = async (payload: SessionUpdatedPayload) => {
 
     const isValid = validateXml(xml, 'SessionUpdated');
     if (!isValid) {
-      console.error('[Producer] Ongeldige XML voor SessionUpdated');
+      log.error('[Producer] Ongeldige XML voor SessionUpdated');
       return;
     }
 
@@ -63,8 +64,8 @@ export const sendSessionUpdated = async (payload: SessionUpdatedPayload) => {
       persistent:  true,
     });
 
-    console.log('[Producer] SessionUpdated verzonden (met ICS)');
+    log.info('[Producer] SessionUpdated verzonden (met ICS)');
   } catch (error) {
-    console.error('[Producer] Fout bij verzenden SessionUpdated:', error);
+    log.error('[Producer] Fout bij verzenden SessionUpdated:', error);
   }
 };

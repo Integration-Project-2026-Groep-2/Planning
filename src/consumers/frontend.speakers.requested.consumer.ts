@@ -1,6 +1,7 @@
 import { getChannel } from '../rabbitmq';
 import { isAlreadyProcessed, markAsProcessed } from '../utils/idempotency';
 import { sendToDlq } from '../utils/dlq';
+import { log } from '../utils/logger';
 import { getAllSpeakers } from '../services/speaker.service';
 import { buildXml } from '../utils/xml.builder';
 import crypto from 'crypto';
@@ -54,10 +55,10 @@ export const startSpeakersRequestedConsumer = async () => {
       });
 
       await markAsProcessed(messageId);
-      console.log('[Frontend] Sprekers teruggestuurd via consumer');
+      log.info('[Frontend] Sprekers teruggestuurd via consumer');
       channel.ack(msg);
     } catch (err) {
-      console.error('[Frontend] Fout in frontend.speakers.requested:', err);
+      log.error('[Frontend] Fout in frontend.speakers.requested:', err);
       await sendToDlq(
         xml,
         err instanceof Error ? err.message : 'Unknown error',

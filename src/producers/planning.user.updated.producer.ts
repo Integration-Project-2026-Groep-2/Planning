@@ -1,6 +1,7 @@
 import { getChannel } from '../rabbitmq';
 import { buildXml } from '../utils/xml.builder';
 import { validateXml } from '../utils/xml.validator';
+import { log } from '../utils/logger';
 
 type PlanningUserUpdatedPayload = {
   id:           string;
@@ -33,7 +34,7 @@ export const sendPlanningUserUpdated = async (payload: PlanningUserUpdatedPayloa
 
     const isValid = validateXml(xml, 'PlanningUserUpdated');
     if (!isValid) {
-      console.error('[Producer] Ongeldige XML voor PlanningUserUpdated');
+      log.error('[Producer] Ongeldige XML voor PlanningUserUpdated');
       return;
     }
 
@@ -42,8 +43,8 @@ export const sendPlanningUserUpdated = async (payload: PlanningUserUpdatedPayloa
       persistent:  true,
     });
 
-    console.log('[Producer] PlanningUserUpdated verzonden');
+    log.info('[Producer] PlanningUserUpdated verzonden');
   } catch (error) {
-    console.error('[Producer] Fout bij verzenden PlanningUserUpdated:', error);
+    log.error('[Producer] Fout bij verzenden PlanningUserUpdated:', error);
   }
 };

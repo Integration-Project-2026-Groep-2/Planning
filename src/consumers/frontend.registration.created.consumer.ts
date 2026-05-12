@@ -3,6 +3,7 @@ import { parseXml } from '../utils/xml.parser';
 import { z } from 'zod';
 import { isAlreadyProcessed, markAsProcessed } from '../utils/idempotency';
 import { sendToDlq } from '../utils/dlq';
+import { log } from '../utils/logger';
 import { query } from '../db';
 import { registerParticipant } from '../services/registration.service';
 import { sendRegistrationConfirmed } from '../producers/planning.registration.confirmed.producer';
@@ -65,10 +66,10 @@ export const startRegistrationCreatedConsumer = async () => {
       });
 
       await markAsProcessed(messageId);
-      console.log('[Frontend] Registratie aangemaakt voor crmMasterId:', registration.crmMasterId);
+      log.info('[Frontend] Registratie aangemaakt voor crmMasterId:', registration.crmMasterId);
       channel.ack(msg);
     } catch (err) {
-      console.error('[Frontend] Fout in frontend.registration.created:', err);
+      log.error('[Frontend] Fout in frontend.registration.created:', err);
       await sendToDlq(
         xml,
         err instanceof Error ? err.message : 'Unknown error',

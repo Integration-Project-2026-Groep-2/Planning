@@ -3,6 +3,7 @@ import { parseXml } from '../utils/xml.parser';
 import { z } from 'zod';
 import { isAlreadyProcessed, markAsProcessed } from '../utils/idempotency';
 import { sendToDlq } from '../utils/dlq';
+import { log } from '../utils/logger';
 import { cancelSession } from '../services/session.service';
 import crypto from 'crypto';
 
@@ -40,10 +41,10 @@ export const startFrontendSessionCancelledConsumer = async () => {
       await cancelSession(session.sessionId);
 
       await markAsProcessed(messageId);
-      console.log('[FRONTEND] Sessie geannuleerd');
+      log.info('[FRONTEND] Sessie geannuleerd');
       channel.ack(msg);
     } catch (err) {
-      console.error('[FRONTEND] Fout in frontend.session.cancelled:', err);
+      log.error('[FRONTEND] Fout in frontend.session.cancelled:', err);
       await sendToDlq(
         xml,
         err instanceof Error ? err.message : 'Unknown error',

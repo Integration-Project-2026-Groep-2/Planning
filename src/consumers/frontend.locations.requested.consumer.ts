@@ -1,6 +1,7 @@
 import { getChannel } from '../rabbitmq';
 import { isAlreadyProcessed, markAsProcessed } from '../utils/idempotency';
 import { sendToDlq } from '../utils/dlq';
+import { log } from '../utils/logger';
 import { getAllLocations } from '../services/location.service';
 import { buildXml } from '../utils/xml.builder';
 import crypto from 'crypto';
@@ -52,10 +53,10 @@ export const startLocationsRequestedConsumer = async () => {
       });
 
       await markAsProcessed(messageId);
-      console.log('[Frontend] Locaties teruggestuurd via consumer');
+      log.info('[Frontend] Locaties teruggestuurd via consumer');
       channel.ack(msg);
     } catch (err) {
-      console.error('[Frontend] Fout in frontend.locations.requested:', err);
+      log.error('[Frontend] Fout in frontend.locations.requested:', err);
       await sendToDlq(
         xml,
         err instanceof Error ? err.message : 'Unknown error',

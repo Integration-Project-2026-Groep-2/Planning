@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { query } from '../db';
 import { isAlreadyProcessed, markAsProcessed } from '../utils/idempotency';
 import { sendToDlq } from '../utils/dlq';
+import { log } from '../utils/logger';
 import crypto from 'crypto';
 
 const toBoolean = (value: unknown) => {
@@ -90,10 +91,10 @@ export const startUserUpdatedConsumer = async () => {
       );
 
       await markAsProcessed(messageId);
-      console.log('[CRM] User/Speaker geüpdatet');
+      log.info('[CRM] User/Speaker geüpdatet');
       channel.ack(msg);
     } catch (err) {
-      console.error('[CRM] Fout in crm.user.updated:', err);
+      log.error('[CRM] Fout in crm.user.updated:', err);
 
       await sendToDlq(
         xml, 

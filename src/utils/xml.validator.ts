@@ -11,6 +11,7 @@ const schemaMap: Record<string, string> = {
 
   Heartbeat: 'controlroom.xsd',
   SessionError: 'controlroom.xsd',
+  LogEvent: 'controlroom.xsd',
 
   /*
    |--------------------------------------------------------------------------

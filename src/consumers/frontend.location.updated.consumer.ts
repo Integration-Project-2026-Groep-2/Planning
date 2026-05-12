@@ -3,6 +3,7 @@ import { parseXml } from '../utils/xml.parser';
 import { z } from 'zod';
 import { isAlreadyProcessed, markAsProcessed } from '../utils/idempotency';
 import { sendToDlq } from '../utils/dlq';
+import { log } from '../utils/logger';
 import { updateLocation } from '../services/location.service';
 import crypto from 'crypto';
 
@@ -48,10 +49,10 @@ export const startLocationUpdatedConsumer = async () => {
       });
 
       await markAsProcessed(messageId);
-      console.log('[Frontend] Locatie gewijzigd via consumer');
+      log.info('[Frontend] Locatie gewijzigd via consumer');
       channel.ack(msg);
     } catch (err) {
-      console.error('[Frontend] Fout in frontend.location.updated:', err);
+      log.error('[Frontend] Fout in frontend.location.updated:', err);
       await sendToDlq(
         xml,
         err instanceof Error ? err.message : 'Unknown error',

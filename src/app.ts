@@ -26,6 +26,7 @@ import {
 
 import { setupRabbitMQ } from "./rabbitmq/setup";
 import { waitForDatabase } from "./utils/db/wait-for-db";
+import { log } from "./utils/logger";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -81,7 +82,7 @@ const start = async () => {
     }
 
     app.listen(PORT, () => {
-        console.log(`Planning service running on port ${PORT}`);
+        log.info(`Planning service running on port ${PORT}`);
     });
 };
 

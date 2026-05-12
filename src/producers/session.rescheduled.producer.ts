@@ -1,6 +1,7 @@
 import { getChannel } from '../rabbitmq';
 import { buildXml } from '../utils/xml.builder';
 import { validateXml } from '../utils/xml.validator';
+import { log } from '../utils/logger';
 
 type SessionRescheduledPayload = {
   sessionId: string;
@@ -48,7 +49,7 @@ export const sendSessionRescheduled = async (
 
     const isValid = validateXml(xml, 'SessionRescheduled');
     if (!isValid) {
-      console.error('[Producer] Ongeldige XML voor SessionRescheduled');
+      log.error('[Producer] Ongeldige XML voor SessionRescheduled');
       return;
     }
 
@@ -57,8 +58,8 @@ export const sendSessionRescheduled = async (
       persistent: true,
     });
 
-    console.log('[Producer] SessionRescheduled verzonden');
+    log.info('[Producer] SessionRescheduled verzonden');
   } catch (error) {
-    console.error('[Producer] Fout bij verzenden SessionRescheduled:', error);
+    log.error('[Producer] Fout bij verzenden SessionRescheduled:', error);
   }
 };
