@@ -3,7 +3,8 @@ import { getChannel } from '../rabbitmq';
 export type LogLevel = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR' | 'FATAL' | 'PANIC';
 
 const escapeXml = (s: string): string =>
-  s.replace(/&/g, '&amp;')
+  s.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '')
+    .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
