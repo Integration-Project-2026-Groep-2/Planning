@@ -14,3 +14,4 @@ export { startSpeakerUpdatedConsumer }     from './frontend.speaker.updated.cons
 export { startSpeakerDeactivatedConsumer } from './frontend.speaker.deactivated.consumer';
 export { startSpeakersRequestedConsumer }  from './frontend.speakers.requested.consumer';
 export { startRegistrationCreatedConsumer } from './frontend.registration.created.consumer';
+export { startFrontendSessionRescheduledConsumer } from './frontend.session.rescheduled.consumer';
