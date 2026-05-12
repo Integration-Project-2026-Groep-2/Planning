@@ -1,4 +1,5 @@
 import { getChannel } from '../rabbitmq';
+import { log } from '../utils/logger';
 
 type SessionErrorPayload = {
   errorType:
@@ -37,8 +38,8 @@ export const sendSessionError = async (payload: SessionErrorPayload) => {
       persistent: true,
     });
 
-    console.error(`[SessionError] ${payload.errorType}: ${payload.message}`);
+    log.error(`[SessionError] ${payload.errorType}: ${payload.message}`);
   } catch (error) {
-    console.error('[SessionError] Fout bij verzenden error event:', error);
+    log.error('[SessionError] Fout bij verzenden error event:', error);
   }
 };

@@ -1,6 +1,7 @@
 import { getChannel } from '../rabbitmq';
 import { isAlreadyProcessed, markAsProcessed } from '../utils/idempotency';
 import { sendToDlq } from '../utils/dlq';
+import { log } from '../utils/logger';
 import { getAllSessions } from '../services/session.service';
 import crypto from 'crypto';
 
@@ -39,10 +40,10 @@ export const startFrontendSessionsRequestedConsumer = async () => {
       }
 
       await markAsProcessed(messageId);
-      console.log('[FRONTEND] Sessies teruggestuurd');
+      log.info('[FRONTEND] Sessies teruggestuurd');
       channel.ack(msg);
     } catch (err) {
-      console.error('[FRONTEND] Fout in frontend.sessions.requested:', err);
+      log.error('[FRONTEND] Fout in frontend.sessions.requested:', err);
 
       await sendToDlq(
         '',

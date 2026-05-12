@@ -1,6 +1,7 @@
 import { getChannel } from '../rabbitmq';
 import { buildXml } from '../utils/xml.builder';
 import { validateXml } from '../utils/xml.validator';
+import { log } from '../utils/logger';
 
 type SessionFullPayload = {
   sessionId: string;
@@ -28,7 +29,7 @@ export const sendSessionFull = async (payload: SessionFullPayload) => {
 
     const isValid = validateXml(xml, 'SessionFull');
     if (!isValid) {
-      console.error('[Producer] Ongeldige XML voor SessionFull');
+      log.error('[Producer] Ongeldige XML voor SessionFull');
       return;
     }
 
@@ -37,8 +38,8 @@ export const sendSessionFull = async (payload: SessionFullPayload) => {
       persistent: true,
     });
 
-    console.log('[Producer] SessionFull verzonden');
+    log.info('[Producer] SessionFull verzonden');
   } catch (error) {
-    console.error('[Producer] Fout bij verzenden SessionFull:', error);
+    log.error('[Producer] Fout bij verzenden SessionFull:', error);
   }
 };

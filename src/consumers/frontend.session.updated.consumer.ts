@@ -3,6 +3,7 @@ import { parseXml } from '../utils/xml.parser';
 import { z } from 'zod';
 import { isAlreadyProcessed, markAsProcessed } from '../utils/idempotency';
 import { sendToDlq } from '../utils/dlq';
+import { log } from '../utils/logger';
 import { updateSession } from '../services/session.service';
 import crypto from 'crypto';
 
@@ -45,10 +46,10 @@ export const startFrontendSessionUpdatedConsumer = async () => {
       await updateSession(session.sessionId, session);
 
       await markAsProcessed(messageId);
-      console.log('[FRONTEND] Sessie bijgewerkt');
+      log.info('[FRONTEND] Sessie bijgewerkt');
       channel.ack(msg);
     } catch (err) {
-      console.error('[FRONTEND] Fout in frontend.session.updated:', err);
+      log.error('[FRONTEND] Fout in frontend.session.updated:', err);
 
       await sendToDlq(
         xml,

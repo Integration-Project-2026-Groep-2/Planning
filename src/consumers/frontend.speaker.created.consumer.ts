@@ -3,6 +3,7 @@ import { parseXml } from '../utils/xml.parser';
 import { z } from 'zod';
 import { isAlreadyProcessed, markAsProcessed } from '../utils/idempotency';
 import { sendToDlq } from '../utils/dlq';
+import { log } from '../utils/logger';
 import { createSpeaker } from '../services/speaker.service';
 import crypto from 'crypto';
 
@@ -49,10 +50,10 @@ export const startSpeakerCreatedConsumer = async () => {
       });
 
       await markAsProcessed(messageId);
-      console.log('[Frontend] Spreker aangemaakt via consumer');
+      log.info('[Frontend] Spreker aangemaakt via consumer');
       channel.ack(msg);
     } catch (err) {
-      console.error('[Frontend] Fout in frontend.speaker.created:', err);
+      log.error('[Frontend] Fout in frontend.speaker.created:', err);
       await sendToDlq(
         xml,
         err instanceof Error ? err.message : 'Unknown error',

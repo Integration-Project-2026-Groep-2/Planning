@@ -1,6 +1,7 @@
 import { getChannel } from '../rabbitmq';
 import { buildXml } from '../utils/xml.builder';
 import { validateXml } from '../utils/xml.validator';
+import { log } from '../utils/logger';
 
 type SessionCreatedPayload = {
   sessionId:  string;
@@ -38,7 +39,7 @@ export const sendSessionCreated = async (payload: SessionCreatedPayload) => {
 
     const isValid = validateXml(xml, 'SessionCreated');
     if (!isValid) {
-      console.error('[Producer] Ongeldige XML voor SessionCreated');
+      log.error('[Producer] Ongeldige XML voor SessionCreated');
       return;
     }
 
@@ -47,8 +48,8 @@ export const sendSessionCreated = async (payload: SessionCreatedPayload) => {
       persistent:  true,
     });
 
-    console.log('[Producer] SessionCreated verzonden');
+    log.info('[Producer] SessionCreated verzonden');
   } catch (error) {
-    console.error('[Producer] Fout bij verzenden SessionCreated:', error);
+    log.error('[Producer] Fout bij verzenden SessionCreated:', error);
   }
 };

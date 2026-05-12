@@ -1,6 +1,7 @@
 import { getChannel } from '../rabbitmq';
 import { buildXml } from '../utils/xml.builder';
 import { validateXml } from '../utils/xml.validator';
+import { log } from '../utils/logger';
 
 type PlanningUserDeactivatedPayload = {
   id:    string;
@@ -23,7 +24,7 @@ export const sendPlanningUserDeactivated = async (payload: PlanningUserDeactivat
 
     const isValid = validateXml(xml, 'PlanningUserDeactivated');
     if (!isValid) {
-      console.error('[Producer] Ongeldige XML voor PlanningUserDeactivated');
+      log.error('[Producer] Ongeldige XML voor PlanningUserDeactivated');
       return;
     }
 
@@ -32,8 +33,8 @@ export const sendPlanningUserDeactivated = async (payload: PlanningUserDeactivat
       persistent:  true,
     });
 
-    console.log('[Producer] PlanningUserDeactivated verzonden');
+    log.info('[Producer] PlanningUserDeactivated verzonden');
   } catch (error) {
-    console.error('[Producer] Fout bij verzenden PlanningUserDeactivated:', error);
+    log.error('[Producer] Fout bij verzenden PlanningUserDeactivated:', error);
   }
 };

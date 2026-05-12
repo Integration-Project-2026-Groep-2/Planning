@@ -3,6 +3,7 @@ import { parseXml } from '../utils/xml.parser';
 import { z } from 'zod';
 import { isAlreadyProcessed, markAsProcessed } from '../utils/idempotency';
 import { sendToDlq } from '../utils/dlq';
+import { log } from '../utils/logger';
 import { deleteLocation } from '../services/location.service';
 import crypto from 'crypto';
 
@@ -39,10 +40,10 @@ export const startLocationDeletedConsumer = async () => {
       await deleteLocation(location.locationId);
 
       await markAsProcessed(messageId);
-      console.log('[Frontend] Locatie verwijderd via consumer');
+      log.info('[Frontend] Locatie verwijderd via consumer');
       channel.ack(msg);
     } catch (err) {
-      console.error('[Frontend] Fout in frontend.location.deleted:', err);
+      log.error('[Frontend] Fout in frontend.location.deleted:', err);
       await sendToDlq(
         xml,
         err instanceof Error ? err.message : 'Unknown error',

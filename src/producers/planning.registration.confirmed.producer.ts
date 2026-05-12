@@ -1,6 +1,7 @@
 import { getChannel } from '../rabbitmq';
 import { buildXml } from '../utils/xml.builder';
 import { validateXml } from '../utils/xml.validator';
+import { log } from '../utils/logger';
 
 type RegistrationConfirmedPayload = {
   registrationId: string;
@@ -28,7 +29,7 @@ export const sendRegistrationConfirmed = async (
 
     const isValid = await validateXml(xml, 'RegistrationConfirmed');
     if (!isValid) {
-      console.error('[Producer] Ongeldige XML voor RegistrationConfirmed');
+      log.error('[Producer] Ongeldige XML voor RegistrationConfirmed');
       return;
     }
 
@@ -37,8 +38,8 @@ export const sendRegistrationConfirmed = async (
       persistent:  true,
     });
 
-    console.log('[Producer] RegistrationConfirmed verzonden');
+    log.info('[Producer] RegistrationConfirmed verzonden');
   } catch (error) {
-    console.error('[Producer] Fout bij verzenden RegistrationConfirmed:', error);
+    log.error('[Producer] Fout bij verzenden RegistrationConfirmed:', error);
   }
 };
