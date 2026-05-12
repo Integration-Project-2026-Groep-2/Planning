@@ -1,6 +1,7 @@
 import { getChannel } from '../rabbitmq';
 import { buildXml } from '../utils/xml.builder';
 import { validateXml } from '../utils/xml.validator';
+import { log } from '../utils/logger';
 
 type ParticipantRegisteredPayload = {
   sessionId: string;
@@ -32,7 +33,7 @@ export const sendParticipantRegistered = async (
 
     const isValid = validateXml(xml, 'ParticipantRegistered');
     if (!isValid) {
-      console.error('[Producer] Ongeldige XML voor ParticipantRegistered');
+      log.error('[Producer] Ongeldige XML voor ParticipantRegistered');
       return;
     }
 
@@ -41,9 +42,9 @@ export const sendParticipantRegistered = async (
       persistent: true,
     });
 
-    console.log('[Producer] ParticipantRegistered verzonden');
+    log.info('[Producer] ParticipantRegistered verzonden');
   } catch (error) {
-    console.error(
+    log.error(
       '[Producer] Fout bij verzenden ParticipantRegistered:',
       error
     );
