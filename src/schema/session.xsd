@@ -4,7 +4,7 @@
 
   <!-- ========================================================= -->
   <!-- SessionCreated -->
-  <!-- Planning → Frontend / Control Room / Mailing -->
+  <!-- Planning → Frontend / Control Room -->
   <!-- Frontend → Planning (sessionId optioneel want Planning genereert die) -->
   <!-- ========================================================= -->
 
@@ -110,20 +110,20 @@
 
   <!-- ========================================================= -->
   <!-- SessionFull -->
-  <!-- Planning → Frontend / Mailing -->
+  <!-- Planning → Frontend -->
   <!-- ========================================================= -->
 
-    <xs:element name="SessionFull">
-      <xs:complexType>
-        <xs:sequence>
-          <xs:element name="sessionId"            type="xs:string"/>
-          <xs:element name="currentRegistrations" type="xs:int"      minOccurs="0"/>
-          <xs:element name="capacity"             type="xs:int"      minOccurs="0"/>
-          <xs:element name="crmMasterId"          type="xs:string"   minOccurs="0"/>
-          <xs:element name="timestamp"            type="xs:dateTime" minOccurs="0"/>
-        </xs:sequence>
-      </xs:complexType>
-    </xs:element>
+  <xs:element name="SessionFull">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="sessionId"            type="xs:string"/>
+        <xs:element name="currentRegistrations" type="xs:int"      minOccurs="0"/>
+        <xs:element name="capacity"             type="xs:int"      minOccurs="0"/>
+        <xs:element name="crmMasterId"          type="xs:string"   minOccurs="0"/>
+        <xs:element name="timestamp"            type="xs:dateTime" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
 
   <!-- ========================================================= -->
   <!-- ParticipantRegistered -->
@@ -231,11 +231,24 @@
   <xs:element name="RegistrationCreated">
     <xs:complexType>
       <xs:sequence>
-        <xs:element name="sessionId" type="xs:string"/>
-        <xs:element name="firstName" type="xs:string"/>
-        <xs:element name="lastName"  type="xs:string"/>
-        <xs:element name="email"     type="xs:string"/>
-        <xs:element name="company"   type="xs:string" minOccurs="0"/>
+        <xs:element name="sessionId"   type="xs:string"/>
+        <xs:element name="crmMasterId" type="xs:string"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- ========================================================= -->
+  <!-- RegistrationConfirmed -->
+  <!-- Planning → Frontend -->
+  <!-- ========================================================= -->
+
+  <xs:element name="RegistrationConfirmed">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="registrationId" type="xs:string"/>
+        <xs:element name="sessionId"      type="xs:string"/>
+        <xs:element name="crmMasterId"    type="xs:string"/>
+        <xs:element name="timestamp"      type="xs:dateTime" minOccurs="0"/>
       </xs:sequence>
     </xs:complexType>
   </xs:element>
