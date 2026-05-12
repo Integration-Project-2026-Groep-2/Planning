@@ -28,6 +28,7 @@ const schemaMap: Record<string, string> = {
   SessionsAll: 'session.xsd',
   FrontendSessionUpdated: 'session.xsd',
   FrontendSessionCancelled: 'session.xsd',
+  RegistrationCreated: 'session.xsd',
 
   /*
    |--------------------------------------------------------------------------
@@ -62,10 +63,6 @@ const schemaMap: Record<string, string> = {
   UserConfirmed: 'crm.xsd',
   UserUpdated: 'crm.xsd',
   UserDeactivated: 'crm.xsd',
-
-  CompanyConfirmed: 'crm.xsd',
-  CompanyUpdated: 'crm.xsd',
-  CompanyDeactivated: 'crm.xsd',
 
   /*
    |--------------------------------------------------------------------------

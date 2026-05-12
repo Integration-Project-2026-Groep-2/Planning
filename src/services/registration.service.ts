@@ -61,8 +61,9 @@ export const registerParticipant = async (
     crmMasterId: data.crmMasterId || data.participantId,
     currentRegistrations: newCount,
     capacity: session.capacity,
-    registrationTime: registration.registrationTime,
-  });
+    registrationTime: registration.registrationTime
+    ? new Date(registration.registrationTime).toISOString()
+    : new Date().toISOString(),  });
 
   // RabbitMQ: SessionFull event versturen als sessie nu vol is
   if (newCount >= session.capacity) {

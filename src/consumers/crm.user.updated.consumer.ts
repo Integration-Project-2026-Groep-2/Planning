@@ -51,6 +51,7 @@ export const startUserUpdatedConsumer = async () => {
       const data = await parseXml(xml, 'UserUpdated');
       const user = schema.parse(data);
 
+      // ── Update Speaker ──
       await query(
         `UPDATE "Speaker"
          SET "firstName"=$1,
@@ -69,8 +70,27 @@ export const startUserUpdatedConsumer = async () => {
         ]
       );
 
+      // ── Update User ──
+      await query(
+        `UPDATE "User"
+         SET "firstName"=$1,
+             "lastName"=$2,
+             "email"=$3,
+             "role"=$4,
+             "isActive"=$5
+         WHERE "crmMasterId"=$6`,
+        [
+          user.firstName,
+          user.lastName,
+          user.email,
+          user.role,
+          user.isActive,
+          user.id,
+        ]
+      );
+
       await markAsProcessed(messageId);
-      console.log('[CRM] Speaker geüpdatet');
+      console.log('[CRM] User/Speaker geüpdatet');
       channel.ack(msg);
     } catch (err) {
       console.error('[CRM] Fout in crm.user.updated:', err);
