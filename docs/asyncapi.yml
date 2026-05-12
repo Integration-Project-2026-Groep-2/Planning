@@ -2,11 +2,11 @@ asyncapi: 3.1.0
 
 info:
   title: Planning Service
-  version: 1.6.0
+  version: 1.7.0
   description: |
     AsyncAPI documentatie voor de Planning Service — Integratieproject 2026 Groep 2.
     De Planning Service beheert sessies, locaties, sprekers en inschrijvingen voor events.
-    Communicatie verloopt via RabbitMQ met XML berichten gevalideerd tegen planning.schema.xsd.
+    Communicatie verloopt via RabbitMQ met XML berichten gevalideerd tegen de XSD schema bestanden.
   contact:
     name: Hana (Team Lead)
 
@@ -152,6 +152,106 @@ channels:
           type: topic
           durable: true
 
+  planning.registration.confirmed:
+    address: planning.registration.confirmed
+    description: |
+      Verstuurd naar Frontend als bevestiging dat een registratie succesvol is verwerkt.
+    messages:
+      RegistrationConfirmedMessage:
+        $ref: '#/components/messages/RegistrationConfirmed'
+    bindings:
+      amqp:
+        is: routingKey
+        exchange:
+          name: planning.topic
+          type: topic
+          durable: true
+
+  # ── PLANNING → FRONTEND (locaties en sprekers) ───────────────────────
+  planning.location.created:
+    address: planning.location.created
+    description: Planning stuurt bevestiging naar Frontend na aanmaken locatie.
+    messages:
+      LocationCreatedMessage:
+        $ref: '#/components/messages/LocationCreated'
+    bindings:
+      amqp:
+        is: routingKey
+        exchange:
+          name: planning.topic
+          type: topic
+          durable: true
+
+  planning.location.updated:
+    address: planning.location.updated
+    description: Planning stuurt locatie update naar Frontend.
+    messages:
+      LocationUpdatedMessage:
+        $ref: '#/components/messages/LocationUpdated'
+    bindings:
+      amqp:
+        is: routingKey
+        exchange:
+          name: planning.topic
+          type: topic
+          durable: true
+
+  planning.location.deleted:
+    address: planning.location.deleted
+    description: Planning stuurt locatie verwijdering naar Frontend.
+    messages:
+      LocationDeletedMessage:
+        $ref: '#/components/messages/LocationDeleted'
+    bindings:
+      amqp:
+        is: routingKey
+        exchange:
+          name: planning.topic
+          type: topic
+          durable: true
+
+  planning.speaker.created:
+    address: planning.speaker.created
+    description: Planning stuurt bevestiging naar Frontend na aanmaken spreker.
+    messages:
+      SpeakerCreatedMessage:
+        $ref: '#/components/messages/SpeakerCreated'
+    bindings:
+      amqp:
+        is: routingKey
+        exchange:
+          name: planning.topic
+          type: topic
+          durable: true
+
+  planning.speaker.updated:
+    address: planning.speaker.updated
+    description: Planning stuurt spreker update naar Frontend.
+    messages:
+      SpeakerUpdatedMessage:
+        $ref: '#/components/messages/SpeakerUpdated'
+    bindings:
+      amqp:
+        is: routingKey
+        exchange:
+          name: planning.topic
+          type: topic
+          durable: true
+
+  planning.speaker.deactivated:
+    address: planning.speaker.deactivated
+    description: Planning stuurt spreker deactivatie naar Frontend.
+    messages:
+      SpeakerDeactivatedMessage:
+        $ref: '#/components/messages/SpeakerDeactivated'
+    bindings:
+      amqp:
+        is: routingKey
+        exchange:
+          name: planning.topic
+          type: topic
+          durable: true
+
   # ── PLANNING → CRM (user sync via user.topic) ───────────────────────
   planning.user.created:
     address: planning.user.created
@@ -201,13 +301,199 @@ channels:
           type: topic
           durable: true
 
+  # ── FRONTEND → PLANNING (via frontend.topic) ─────────────────────────
+  frontend.location.created:
+    address: planning.location.created
+    description: Frontend stuurt verzoek naar Planning om een locatie aan te maken.
+    messages:
+      FrontendLocationCreatedMessage:
+        $ref: '#/components/messages/LocationCreated'
+    bindings:
+      amqp:
+        is: routingKey
+        exchange:
+          name: frontend.topic
+          type: topic
+          durable: true
+
+  frontend.location.updated:
+    address: planning.location.updated
+    description: Frontend stuurt verzoek naar Planning om een locatie te wijzigen.
+    messages:
+      FrontendLocationUpdatedMessage:
+        $ref: '#/components/messages/LocationUpdated'
+    bindings:
+      amqp:
+        is: routingKey
+        exchange:
+          name: frontend.topic
+          type: topic
+          durable: true
+
+  frontend.location.deleted:
+    address: planning.location.deleted
+    description: Frontend stuurt verzoek naar Planning om een locatie te verwijderen.
+    messages:
+      FrontendLocationDeletedMessage:
+        $ref: '#/components/messages/LocationDeleted'
+    bindings:
+      amqp:
+        is: routingKey
+        exchange:
+          name: frontend.topic
+          type: topic
+          durable: true
+
+  frontend.locations.requested:
+    address: planning.locations.requested
+    description: Frontend vraagt alle locaties op via request-reply.
+    messages:
+      LocationsRequestedMessage:
+        $ref: '#/components/messages/LocationsRequested'
+    bindings:
+      amqp:
+        is: routingKey
+        exchange:
+          name: frontend.topic
+          type: topic
+          durable: true
+
+  frontend.speaker.created:
+    address: planning.speaker.created
+    description: Frontend stuurt verzoek naar Planning om een spreker aan te maken.
+    messages:
+      FrontendSpeakerCreatedMessage:
+        $ref: '#/components/messages/SpeakerCreated'
+    bindings:
+      amqp:
+        is: routingKey
+        exchange:
+          name: frontend.topic
+          type: topic
+          durable: true
+
+  frontend.speaker.updated:
+    address: planning.speaker.updated
+    description: Frontend stuurt verzoek naar Planning om een spreker te wijzigen.
+    messages:
+      FrontendSpeakerUpdatedMessage:
+        $ref: '#/components/messages/SpeakerUpdated'
+    bindings:
+      amqp:
+        is: routingKey
+        exchange:
+          name: frontend.topic
+          type: topic
+          durable: true
+
+  frontend.speaker.deactivated:
+    address: planning.speaker.deactivated
+    description: Frontend stuurt verzoek naar Planning om een spreker te deactiveren.
+    messages:
+      FrontendSpeakerDeactivatedMessage:
+        $ref: '#/components/messages/SpeakerDeactivated'
+    bindings:
+      amqp:
+        is: routingKey
+        exchange:
+          name: frontend.topic
+          type: topic
+          durable: true
+
+  frontend.speakers.requested:
+    address: planning.speakers.requested
+    description: Frontend vraagt alle sprekers op via request-reply.
+    messages:
+      SpeakersRequestedMessage:
+        $ref: '#/components/messages/SpeakersRequested'
+    bindings:
+      amqp:
+        is: routingKey
+        exchange:
+          name: frontend.topic
+          type: topic
+          durable: true
+
+  frontend.session.created:
+    address: planning.session.created
+    description: Frontend stuurt verzoek naar Planning om een sessie aan te maken.
+    messages:
+      FrontendSessionCreatedMessage:
+        $ref: '#/components/messages/FrontendSessionCreated'
+    bindings:
+      amqp:
+        is: routingKey
+        exchange:
+          name: frontend.topic
+          type: topic
+          durable: true
+
+  frontend.session.updated:
+    address: planning.session.updated
+    description: Frontend stuurt verzoek naar Planning om een sessie te wijzigen.
+    messages:
+      FrontendSessionUpdatedMessage:
+        $ref: '#/components/messages/FrontendSessionUpdated'
+    bindings:
+      amqp:
+        is: routingKey
+        exchange:
+          name: frontend.topic
+          type: topic
+          durable: true
+
+  frontend.session.cancelled:
+    address: planning.session.cancelled
+    description: Frontend stuurt verzoek naar Planning om een sessie te annuleren.
+    messages:
+      FrontendSessionCancelledMessage:
+        $ref: '#/components/messages/FrontendSessionCancelled'
+    bindings:
+      amqp:
+        is: routingKey
+        exchange:
+          name: frontend.topic
+          type: topic
+          durable: true
+
+  frontend.sessions.requested:
+    address: planning.sessions.requested
+    description: Frontend vraagt alle sessies op via request-reply.
+    messages:
+      SessionsRequestedMessage:
+        $ref: '#/components/messages/SessionsRequested'
+    bindings:
+      amqp:
+        is: routingKey
+        exchange:
+          name: frontend.topic
+          type: topic
+          durable: true
+
+  frontend.registration.created:
+    address: planning.registration.created
+    description: |
+      Frontend stuurt registratieverzoek naar Planning.
+      Bevat sessionId en crmMasterId van de bezoeker.
+    messages:
+      RegistrationCreatedMessage:
+        $ref: '#/components/messages/RegistrationCreated'
+    bindings:
+      amqp:
+        is: routingKey
+        exchange:
+          name: frontend.topic
+          type: topic
+          durable: true
+
   # ── CRM → PLANNING (via contact.topic) ──────────────────────────────
   crm.user.confirmed:
     address: planning.user.confirmed
     description: |
       Planning luistert op deze queue.
       Als role=SPEAKER → opslaan in Speaker tabel.
-      Anders → opslaan als Participant referentie.
+      Als role=EVENT_MANAGER → crmMasterId opslaan bij User.
+      Als role=VISITOR → crmMasterId opslaan bij Participant.
     messages:
       UserConfirmedMessage:
         $ref: '#/components/messages/UserConfirmed'
@@ -243,50 +529,6 @@ channels:
     messages:
       UserDeactivatedMessage:
         $ref: '#/components/messages/UserDeactivated'
-    bindings:
-      amqp:
-        is: routingKey
-        exchange:
-          name: contact.topic
-          type: topic
-          durable: true
-
-  crm.company.confirmed:
-    address: planning.company.confirmed
-    description: Planning luistert op deze queue — bedrijfsnaam opslaan als referentie.
-    messages:
-      CompanyConfirmedMessage:
-        $ref: '#/components/messages/CompanyConfirmed'
-    bindings:
-      amqp:
-        is: routingKey
-        exchange:
-          name: contact.topic
-          type: topic
-          durable: true
-
-  crm.company.updated:
-    address: planning.company.updated
-    description: Planning luistert op deze queue — bedrijfsdata bijwerken.
-    messages:
-      CompanyUpdatedMessage:
-        $ref: '#/components/messages/CompanyUpdated'
-    bindings:
-      amqp:
-        is: routingKey
-        exchange:
-          name: contact.topic
-          type: topic
-          durable: true
-
-  crm.company.deactivated:
-    address: planning.company.deactivated
-    description: |
-      Planning luistert op deze queue.
-      Bedrijf deactiveren, controleer of gekoppeld aan toekomstige sessies.
-    messages:
-      CompanyDeactivatedMessage:
-        $ref: '#/components/messages/CompanyDeactivated'
     bindings:
       amqp:
         is: routingKey
@@ -349,6 +591,48 @@ operations:
       $ref: '#/channels/planning.participant.registered'
     summary: Planning verstuurt ParticipantRegistered naar Control Room
 
+  sendRegistrationConfirmed:
+    action: send
+    channel:
+      $ref: '#/channels/planning.registration.confirmed'
+    summary: Planning verstuurt RegistrationConfirmed naar Frontend als bevestiging
+
+  sendLocationCreated:
+    action: send
+    channel:
+      $ref: '#/channels/planning.location.created'
+    summary: Planning verstuurt LocationCreated naar Frontend
+
+  sendLocationUpdated:
+    action: send
+    channel:
+      $ref: '#/channels/planning.location.updated'
+    summary: Planning verstuurt LocationUpdated naar Frontend
+
+  sendLocationDeleted:
+    action: send
+    channel:
+      $ref: '#/channels/planning.location.deleted'
+    summary: Planning verstuurt LocationDeleted naar Frontend
+
+  sendSpeakerCreated:
+    action: send
+    channel:
+      $ref: '#/channels/planning.speaker.created'
+    summary: Planning verstuurt SpeakerCreated naar Frontend
+
+  sendSpeakerUpdated:
+    action: send
+    channel:
+      $ref: '#/channels/planning.speaker.updated'
+    summary: Planning verstuurt SpeakerUpdated naar Frontend
+
+  sendSpeakerDeactivated:
+    action: send
+    channel:
+      $ref: '#/channels/planning.speaker.deactivated'
+    summary: Planning verstuurt SpeakerDeactivated naar Frontend
+
   sendPlanningUserCreated:
     action: send
     channel:
@@ -367,12 +651,91 @@ operations:
       $ref: '#/channels/planning.user.deactivated'
     summary: Planning verstuurt PlanningUserDeactivated naar CRM wanneer een spreker gedeactiveerd wordt
 
-  # ── PLANNING ontvangt ────────────────────────────────────────────────
+  # ── PLANNING ontvangt van Frontend ───────────────────────────────────
+  receiveFrontendLocationCreated:
+    action: receive
+    channel:
+      $ref: '#/channels/frontend.location.created'
+    summary: Planning ontvangt LocationCreated van Frontend — locatie aanmaken
+
+  receiveFrontendLocationUpdated:
+    action: receive
+    channel:
+      $ref: '#/channels/frontend.location.updated'
+    summary: Planning ontvangt LocationUpdated van Frontend — locatie wijzigen
+
+  receiveFrontendLocationDeleted:
+    action: receive
+    channel:
+      $ref: '#/channels/frontend.location.deleted'
+    summary: Planning ontvangt LocationDeleted van Frontend — locatie verwijderen
+
+  receiveFrontendLocationsRequested:
+    action: receive
+    channel:
+      $ref: '#/channels/frontend.locations.requested'
+    summary: Planning ontvangt LocationsRequested van Frontend — alle locaties terugsturen
+
+  receiveFrontendSpeakerCreated:
+    action: receive
+    channel:
+      $ref: '#/channels/frontend.speaker.created'
+    summary: Planning ontvangt SpeakerCreated van Frontend — spreker aanmaken
+
+  receiveFrontendSpeakerUpdated:
+    action: receive
+    channel:
+      $ref: '#/channels/frontend.speaker.updated'
+    summary: Planning ontvangt SpeakerUpdated van Frontend — spreker wijzigen
+
+  receiveFrontendSpeakerDeactivated:
+    action: receive
+    channel:
+      $ref: '#/channels/frontend.speaker.deactivated'
+    summary: Planning ontvangt SpeakerDeactivated van Frontend — spreker deactiveren
+
+  receiveFrontendSpeakersRequested:
+    action: receive
+    channel:
+      $ref: '#/channels/frontend.speakers.requested'
+    summary: Planning ontvangt SpeakersRequested van Frontend — alle sprekers terugsturen
+
+  receiveFrontendSessionCreated:
+    action: receive
+    channel:
+      $ref: '#/channels/frontend.session.created'
+    summary: Planning ontvangt SessionCreated van Frontend — sessie aanmaken
+
+  receiveFrontendSessionUpdated:
+    action: receive
+    channel:
+      $ref: '#/channels/frontend.session.updated'
+    summary: Planning ontvangt SessionUpdated van Frontend — sessie wijzigen
+
+  receiveFrontendSessionCancelled:
+    action: receive
+    channel:
+      $ref: '#/channels/frontend.session.cancelled'
+    summary: Planning ontvangt SessionCancelled van Frontend — sessie annuleren
+
+  receiveFrontendSessionsRequested:
+    action: receive
+    channel:
+      $ref: '#/channels/frontend.sessions.requested'
+    summary: Planning ontvangt SessionsRequested van Frontend — alle sessies terugsturen
+
+  receiveFrontendRegistrationCreated:
+    action: receive
+    channel:
+      $ref: '#/channels/frontend.registration.created'
+    summary: Planning ontvangt RegistrationCreated van Frontend — deelnemer registreren voor sessie
+
+  # ── PLANNING ontvangt van CRM ────────────────────────────────────────
   receiveUserConfirmed:
     action: receive
     channel:
       $ref: '#/channels/crm.user.confirmed'
-    summary: Planning ontvangt UserConfirmed van CRM — opslaan als Speaker of Participant
+    summary: Planning ontvangt UserConfirmed van CRM — opslaan als Speaker, User of Participant
 
   receiveUserUpdated:
     action: receive
@@ -385,24 +748,6 @@ operations:
     channel:
       $ref: '#/channels/crm.user.deactivated'
     summary: Planning ontvangt UserDeactivated van CRM — isActive op false zetten
-
-  receiveCompanyConfirmed:
-    action: receive
-    channel:
-      $ref: '#/channels/crm.company.confirmed'
-    summary: Planning ontvangt CompanyConfirmed van CRM — bedrijf opslaan
-
-  receiveCompanyUpdated:
-    action: receive
-    channel:
-      $ref: '#/channels/crm.company.updated'
-    summary: Planning ontvangt CompanyUpdated van CRM — bedrijfsdata bijwerken
-
-  receiveCompanyDeactivated:
-    action: receive
-    channel:
-      $ref: '#/channels/crm.company.deactivated'
-    summary: Planning ontvangt CompanyDeactivated van CRM — bedrijf deactiveren
 
 components:
 
@@ -424,7 +769,7 @@ components:
     SessionCreated:
       name: SessionCreated
       title: SessionCreated
-      summary: Nieuwe sessie aangemaakt — contracts 3 en 12
+      summary: Nieuwe sessie aangemaakt
       contentType: application/xml
       payload:
         $ref: '#/components/schemas/SessionCreated'
@@ -432,7 +777,7 @@ components:
     SessionUpdated:
       name: SessionUpdated
       title: SessionUpdated
-      summary: Sessie gewijzigd — contracts 1, 4 en 8
+      summary: Sessie gewijzigd
       contentType: application/xml
       payload:
         $ref: '#/components/schemas/SessionUpdated'
@@ -440,7 +785,7 @@ components:
     SessionCancelled:
       name: SessionCancelled
       title: SessionCancelled
-      summary: Sessie geannuleerd — contracts 5, 9 en 13
+      summary: Sessie geannuleerd
       contentType: application/xml
       payload:
         $ref: '#/components/schemas/SessionCancelled'
@@ -448,7 +793,7 @@ components:
     SessionRescheduled:
       name: SessionRescheduled
       title: SessionRescheduled
-      summary: Sessie verzet naar ander tijdslot — contracts 6 en 10
+      summary: Sessie verzet naar ander tijdslot
       contentType: application/xml
       payload:
         $ref: '#/components/schemas/SessionRescheduled'
@@ -456,7 +801,7 @@ components:
     SessionFull:
       name: SessionFull
       title: SessionFull
-      summary: Sessie is volzet — contracts 7 en 11
+      summary: Sessie is volzet
       contentType: application/xml
       payload:
         $ref: '#/components/schemas/SessionFull'
@@ -464,7 +809,7 @@ components:
     SessionError:
       name: SessionError
       title: SessionError
-      summary: Fout in de Planning Service — contract 15
+      summary: Fout in de Planning Service
       contentType: application/xml
       payload:
         $ref: '#/components/schemas/SessionError'
@@ -472,15 +817,127 @@ components:
     ParticipantRegistered:
       name: ParticipantRegistered
       title: ParticipantRegistered
-      summary: Deelnemer ingeschreven voor sessie — contract 14
+      summary: Deelnemer ingeschreven voor sessie
       contentType: application/xml
       payload:
         $ref: '#/components/schemas/ParticipantRegistered'
 
+    RegistrationCreated:
+      name: RegistrationCreated
+      title: RegistrationCreated
+      summary: Frontend stuurt registratieverzoek naar Planning
+      contentType: application/xml
+      payload:
+        $ref: '#/components/schemas/RegistrationCreated'
+
+    RegistrationConfirmed:
+      name: RegistrationConfirmed
+      title: RegistrationConfirmed
+      summary: Planning bevestigt registratie aan Frontend
+      contentType: application/xml
+      payload:
+        $ref: '#/components/schemas/RegistrationConfirmed'
+
+    LocationCreated:
+      name: LocationCreated
+      title: LocationCreated
+      summary: Locatie aangemaakt
+      contentType: application/xml
+      payload:
+        $ref: '#/components/schemas/LocationCreated'
+
+    LocationUpdated:
+      name: LocationUpdated
+      title: LocationUpdated
+      summary: Locatie gewijzigd
+      contentType: application/xml
+      payload:
+        $ref: '#/components/schemas/LocationUpdated'
+
+    LocationDeleted:
+      name: LocationDeleted
+      title: LocationDeleted
+      summary: Locatie verwijderd
+      contentType: application/xml
+      payload:
+        $ref: '#/components/schemas/LocationDeleted'
+
+    LocationsRequested:
+      name: LocationsRequested
+      title: LocationsRequested
+      summary: Frontend vraagt alle locaties op
+      contentType: application/xml
+      payload:
+        $ref: '#/components/schemas/LocationsRequested'
+
+    SpeakerCreated:
+      name: SpeakerCreated
+      title: SpeakerCreated
+      summary: Spreker aangemaakt
+      contentType: application/xml
+      payload:
+        $ref: '#/components/schemas/SpeakerCreated'
+
+    SpeakerUpdated:
+      name: SpeakerUpdated
+      title: SpeakerUpdated
+      summary: Spreker gewijzigd
+      contentType: application/xml
+      payload:
+        $ref: '#/components/schemas/SpeakerUpdated'
+
+    SpeakerDeactivated:
+      name: SpeakerDeactivated
+      title: SpeakerDeactivated
+      summary: Spreker gedeactiveerd
+      contentType: application/xml
+      payload:
+        $ref: '#/components/schemas/SpeakerDeactivated'
+
+    SpeakersRequested:
+      name: SpeakersRequested
+      title: SpeakersRequested
+      summary: Frontend vraagt alle sprekers op
+      contentType: application/xml
+      payload:
+        $ref: '#/components/schemas/SpeakersRequested'
+
+    FrontendSessionCreated:
+      name: FrontendSessionCreated
+      title: FrontendSessionCreated
+      summary: Frontend stuurt verzoek om sessie aan te maken
+      contentType: application/xml
+      payload:
+        $ref: '#/components/schemas/FrontendSessionCreated'
+
+    FrontendSessionUpdated:
+      name: FrontendSessionUpdated
+      title: FrontendSessionUpdated
+      summary: Frontend stuurt verzoek om sessie te wijzigen
+      contentType: application/xml
+      payload:
+        $ref: '#/components/schemas/FrontendSessionUpdated'
+
+    FrontendSessionCancelled:
+      name: FrontendSessionCancelled
+      title: FrontendSessionCancelled
+      summary: Frontend stuurt verzoek om sessie te annuleren
+      contentType: application/xml
+      payload:
+        $ref: '#/components/schemas/FrontendSessionCancelled'
+
+    SessionsRequested:
+      name: SessionsRequested
+      title: SessionsRequested
+      summary: Frontend vraagt alle sessies op
+      contentType: application/xml
+      payload:
+        $ref: '#/components/schemas/SessionsRequested'
+
     PlanningUserCreated:
       name: PlanningUserCreated
       title: PlanningUserCreated
-      summary: Spreker aangemaakt in Planning — contract 21
+      summary: Spreker aangemaakt in Planning
       contentType: application/xml
       payload:
         $ref: '#/components/schemas/PlanningUserCreated'
@@ -488,7 +945,7 @@ components:
     PlanningUserUpdated:
       name: PlanningUserUpdated
       title: PlanningUserUpdated
-      summary: Spreker gewijzigd in Planning — contract 22
+      summary: Spreker gewijzigd in Planning
       contentType: application/xml
       payload:
         $ref: '#/components/schemas/PlanningUserUpdated'
@@ -496,7 +953,7 @@ components:
     PlanningUserDeactivated:
       name: PlanningUserDeactivated
       title: PlanningUserDeactivated
-      summary: Spreker gedeactiveerd in Planning — contract 23
+      summary: Spreker gedeactiveerd in Planning
       contentType: application/xml
       payload:
         $ref: '#/components/schemas/PlanningUserDeactivated'
@@ -504,7 +961,7 @@ components:
     UserConfirmed:
       name: UserConfirmed
       title: UserConfirmed
-      summary: CRM bevestigt nieuwe user — contract 16
+      summary: CRM bevestigt nieuwe user
       contentType: application/xml
       payload:
         $ref: '#/components/schemas/UserConfirmed'
@@ -512,7 +969,7 @@ components:
     UserUpdated:
       name: UserUpdated
       title: UserUpdated
-      summary: CRM updatet user — contract 17
+      summary: CRM updatet user
       contentType: application/xml
       payload:
         $ref: '#/components/schemas/UserUpdated'
@@ -520,34 +977,10 @@ components:
     UserDeactivated:
       name: UserDeactivated
       title: UserDeactivated
-      summary: CRM deactiveert user — contract 18
+      summary: CRM deactiveert user
       contentType: application/xml
       payload:
         $ref: '#/components/schemas/UserDeactivated'
-
-    CompanyConfirmed:
-      name: CompanyConfirmed
-      title: CompanyConfirmed
-      summary: CRM bevestigt nieuw bedrijf — contract 19
-      contentType: application/xml
-      payload:
-        $ref: '#/components/schemas/CompanyConfirmed'
-
-    CompanyUpdated:
-      name: CompanyUpdated
-      title: CompanyUpdated
-      summary: CRM updatet bedrijf — contract 20
-      contentType: application/xml
-      payload:
-        $ref: '#/components/schemas/CompanyUpdated'
-
-    CompanyDeactivated:
-      name: CompanyDeactivated
-      title: CompanyDeactivated
-      summary: CRM deactiveert bedrijf — contract 23
-      contentType: application/xml
-      payload:
-        $ref: '#/components/schemas/CompanyDeactivated'
 
   schemas:
 
@@ -564,7 +997,7 @@ components:
 
     SessionCreated:
       type: object
-      required: [sessionId, title, date, startTime, endTime, location, status, capacity, timestamp]
+      required: [title, date, startTime, endTime]
       properties:
         sessionId:
           type: string
@@ -582,6 +1015,9 @@ components:
           format: time
         location:
           type: string
+        locationId:
+          type: string
+          format: uuid
         status:
           type: string
           enum: [active, cancelled, full, concept]
@@ -594,6 +1030,67 @@ components:
         timestamp:
           type: string
           format: date-time
+
+    FrontendSessionCreated:
+      type: object
+      required: [title, date, startTime, endTime, capacity]
+      properties:
+        title:
+          type: string
+        date:
+          type: string
+          format: date
+        startTime:
+          type: string
+          format: time
+        endTime:
+          type: string
+          format: time
+        capacity:
+          type: integer
+          minimum: 1
+        locationId:
+          type: string
+          format: uuid
+
+    FrontendSessionUpdated:
+      type: object
+      required: [sessionId]
+      properties:
+        sessionId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        date:
+          type: string
+          format: date
+        startTime:
+          type: string
+          format: time
+        endTime:
+          type: string
+          format: time
+        capacity:
+          type: integer
+          minimum: 1
+        locationId:
+          type: string
+          format: uuid
+
+    FrontendSessionCancelled:
+      type: object
+      required: [sessionId]
+      properties:
+        sessionId:
+          type: string
+          format: uuid
+        reason:
+          type: string
+
+    SessionsRequested:
+      type: object
+      properties: {}
 
     SessionUpdated:
       type: object
@@ -619,23 +1116,21 @@ components:
             format: uuid
         icsData:
           type: string
-          description: Base64 encoded ICS kalenderbestand
         timestamp:
           type: string
           format: date-time
 
     SessionCancelled:
       type: object
-      required: [sessionId, status, timestamp]
+      required: [sessionId, sessionName]
       properties:
         sessionId:
           type: string
           format: uuid
         sessionName:
-           type: string
+          type: string
         status:
           type: string
-          const: cancelled
         reason:
           type: string
         participantIds:
@@ -645,14 +1140,13 @@ components:
             format: uuid
         icsData:
           type: string
-          description: Base64 encoded ICS kalenderbestand
         timestamp:
           type: string
           format: date-time
 
     SessionRescheduled:
       type: object
-      required: [sessionId, oldDate, oldStartTime, oldEndTime, newDate, newStartTime, newEndTime, timestamp]
+      required: [sessionId, sessionName, oldDate, oldStartTime, newDate, newStartTime]
       properties:
         sessionId:
           type: string
@@ -681,21 +1175,15 @@ components:
           type: string
         reason:
           type: string
-        participantIds:
-          type: array
-          items:
-            type: string
-            format: uuid
         icsData:
           type: string
-          description: Base64 encoded ICS kalenderbestand
         timestamp:
           type: string
           format: date-time
 
     SessionFull:
       type: object
-      required: [sessionId, currentRegistrations, capacity, timestamp]
+      required: [sessionId]
       properties:
         sessionId:
           type: string
@@ -734,7 +1222,7 @@ components:
 
     ParticipantRegistered:
       type: object
-      required: [sessionId, crmMasterId, currentRegistrations, capacity, registrationTime, timestamp]
+      required: [sessionId, currentRegistrations]
       properties:
         sessionId:
           type: string
@@ -754,6 +1242,155 @@ components:
         timestamp:
           type: string
           format: date-time
+
+    RegistrationCreated:
+      type: object
+      required: [sessionId, crmMasterId]
+      properties:
+        sessionId:
+          type: string
+          format: uuid
+        crmMasterId:
+          type: string
+          format: uuid
+
+    RegistrationConfirmed:
+      type: object
+      required: [registrationId, sessionId, crmMasterId]
+      properties:
+        registrationId:
+          type: string
+          format: uuid
+        sessionId:
+          type: string
+          format: uuid
+        crmMasterId:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+
+    LocationCreated:
+      type: object
+      required: [roomName, capacity]
+      properties:
+        locationId:
+          type: string
+          format: uuid
+        roomName:
+          type: string
+        capacity:
+          type: integer
+          minimum: 1
+        address:
+          type: string
+        status:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    LocationUpdated:
+      type: object
+      required: [locationId, roomName, capacity]
+      properties:
+        locationId:
+          type: string
+          format: uuid
+        roomName:
+          type: string
+        capacity:
+          type: integer
+          minimum: 1
+        address:
+          type: string
+        status:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    LocationDeleted:
+      type: object
+      required: [locationId]
+      properties:
+        locationId:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+
+    LocationsRequested:
+      type: object
+      properties: {}
+
+    SpeakerCreated:
+      type: object
+      required: [firstName, lastName, email]
+      properties:
+        speakerId:
+          type: string
+          format: uuid
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+          format: email
+        phoneNumber:
+          type: string
+        company:
+          type: string
+        isActive:
+          type: boolean
+        timestamp:
+          type: string
+          format: date-time
+
+    SpeakerUpdated:
+      type: object
+      required: [speakerId, firstName, lastName, email]
+      properties:
+        speakerId:
+          type: string
+          format: uuid
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+          format: email
+        phoneNumber:
+          type: string
+        company:
+          type: string
+        isActive:
+          type: boolean
+        timestamp:
+          type: string
+          format: date-time
+
+    SpeakerDeactivated:
+      type: object
+      required: [speakerId]
+      properties:
+        speakerId:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        deactivatedAt:
+          type: string
+          format: date-time
+
+    SpeakersRequested:
+      type: object
+      properties: {}
 
     PlanningUserCreated:
       type: object
@@ -819,7 +1456,7 @@ components:
 
     UserConfirmed:
       type: object
-      required: [id, email, firstName, lastName, role, isActive, gdprConsent, confirmedAt]
+      required: [id, email, firstName, lastName, role, isActive, gdprConsent]
       properties:
         id:
           type: string
@@ -836,11 +1473,6 @@ components:
         role:
           type: string
           enum: [VISITOR, COMPANY_CONTACT, SPEAKER, EVENT_MANAGER, CASHIER, BAR_STAFF, ADMIN]
-        companyId:
-          type: string
-          format: uuid
-        badgeCode:
-          type: string
         isActive:
           type: boolean
         gdprConsent:
@@ -851,7 +1483,7 @@ components:
 
     UserUpdated:
       type: object
-      required: [id, email, firstName, lastName, role, isActive, gdprConsent, updatedAt]
+      required: [id, email, firstName, lastName, role, isActive, gdprConsent]
       properties:
         id:
           type: string
@@ -868,21 +1500,6 @@ components:
         role:
           type: string
           enum: [VISITOR, COMPANY_CONTACT, SPEAKER, EVENT_MANAGER, CASHIER, BAR_STAFF, ADMIN]
-        companyId:
-          type: string
-          format: uuid
-        badgeCode:
-          type: string
-        street:
-          type: string
-        houseNumber:
-          type: string
-        postalCode:
-          type: string
-        city:
-          type: string
-        country:
-          type: string
         isActive:
           type: boolean
         gdprConsent:
@@ -901,74 +1518,6 @@ components:
         email:
           type: string
           format: email
-        deactivatedAt:
-          type: string
-          format: date-time
-
-    CompanyConfirmed:
-      type: object
-      required: [id, vatNumber, name, email, isActive, confirmedAt]
-      properties:
-        id:
-          type: string
-          format: uuid
-        vatNumber:
-          type: string
-          pattern: '^BE[0-9]{10}$'
-        name:
-          type: string
-        email:
-          type: string
-          format: email
-        isActive:
-          type: boolean
-        confirmedAt:
-          type: string
-          format: date-time
-
-    CompanyUpdated:
-      type: object
-      required: [id, vatNumber, name, isActive, updatedAt]
-      properties:
-        id:
-          type: string
-          format: uuid
-        vatNumber:
-          type: string
-          pattern: '^BE[0-9]{10}$'
-        name:
-          type: string
-        email:
-          type: string
-          format: email
-        phone:
-          type: string
-        street:
-          type: string
-        houseNumber:
-          type: string
-        postalCode:
-          type: string
-        city:
-          type: string
-        country:
-          type: string
-        isActive:
-          type: boolean
-        updatedAt:
-          type: string
-          format: date-time
-
-    CompanyDeactivated:
-      type: object
-      required: [id, vatNumber, deactivatedAt]
-      properties:
-        id:
-          type: string
-          format: uuid
-        vatNumber:
-          type: string
-          pattern: '^BE[0-9]{10}$'
         deactivatedAt:
           type: string
           format: date-time
