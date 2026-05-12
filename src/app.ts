@@ -22,6 +22,7 @@ import {
     startSpeakerDeactivatedConsumer,
     startSpeakersRequestedConsumer,
     startRegistrationCreatedConsumer,
+    startFrontendSessionRescheduledConsumer,
 } from "./consumers";
 
 import { setupRabbitMQ } from "./rabbitmq/setup";
@@ -69,6 +70,7 @@ const start = async () => {
         await startFrontendSessionUpdatedConsumer();
         await startFrontendSessionCancelledConsumer();
         await startFrontendSessionsRequestedConsumer();
+        await startFrontendSessionRescheduledConsumer();
 
         await startSpeakerCreatedConsumer();
         await startSpeakerUpdatedConsumer();
