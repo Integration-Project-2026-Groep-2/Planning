@@ -85,7 +85,28 @@ CREATE TABLE IF NOT EXISTS "User" (
     "company"   VARCHAR(255),
     "isActive"  BOOLEAN NOT NULL DEFAULT true
 );
-ALTER TABLE "Speaker" ADD CONSTRAINT IF NOT EXISTS speaker_email_unique UNIQUE ("email");
-ALTER TABLE "Location" ADD CONSTRAINT IF NOT EXISTS location_roomname_unique UNIQUE ("roomName");
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'speaker_email_unique'
+    ) THEN
+        ALTER TABLE "Speaker"
+            ADD CONSTRAINT speaker_email_unique UNIQUE ("email");
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'location_roomname_unique'
+    ) THEN
+        ALTER TABLE "Location"
+            ADD CONSTRAINT location_roomname_unique UNIQUE ("roomName");
+    END IF;
+END $$;
 ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "isActive" BOOLEAN NOT NULL DEFAULT true;
 ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "crmMasterId" UUID;
