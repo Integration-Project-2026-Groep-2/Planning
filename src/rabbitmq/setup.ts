@@ -7,6 +7,7 @@ export const setupRabbitMQ = async () => {
     const exchanges = [
         { name: "contact.topic", type: "topic" },
         { name: "frontend.topic", type: "topic" },
+        { name: "logs.direct", type: "direct" },
     ];
 
     const bindings = [

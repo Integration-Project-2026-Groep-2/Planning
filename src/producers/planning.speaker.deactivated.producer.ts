@@ -1,6 +1,7 @@
 import { getChannel } from '../rabbitmq';
 import { buildXml } from '../utils/xml.builder';
 import { validateXml } from '../utils/xml.validator';
+import { log } from '../utils/logger';
 
 type SpeakerDeactivatedPayload = {
   speakerId:      string;
@@ -24,7 +25,7 @@ export const sendSpeakerDeactivated = async (payload: SpeakerDeactivatedPayload)
 
     const isValid = validateXml(xml, 'SpeakerDeactivated');
     if (!isValid) {
-      console.error('[Producer] Ongeldige XML voor SpeakerDeactivated');
+      log.error('[Producer] Ongeldige XML voor SpeakerDeactivated');
       return;
     }
 
@@ -33,8 +34,8 @@ export const sendSpeakerDeactivated = async (payload: SpeakerDeactivatedPayload)
       persistent:  true,
     });
 
-    console.log('[Producer] SpeakerDeactivated verzonden');
+    log.info('[Producer] SpeakerDeactivated verzonden');
   } catch (error) {
-    console.error('[Producer] Fout bij verzenden SpeakerDeactivated:', error);
+    log.error('[Producer] Fout bij verzenden SpeakerDeactivated:', error);
   }
 };

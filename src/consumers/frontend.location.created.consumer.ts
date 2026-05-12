@@ -3,6 +3,7 @@ import { parseXml } from '../utils/xml.parser';
 import { z } from 'zod';
 import { isAlreadyProcessed, markAsProcessed } from '../utils/idempotency';
 import { sendToDlq } from '../utils/dlq';
+import { log } from '../utils/logger';
 import { createLocation } from '../services/location.service';
 import crypto from 'crypto';
 
@@ -47,10 +48,10 @@ export const startLocationCreatedConsumer = async () => {
       });
 
       await markAsProcessed(messageId);
-      console.log('[Frontend] Locatie aangemaakt via consumer');
+      log.info('[Frontend] Locatie aangemaakt via consumer');
       channel.ack(msg);
     } catch (err) {
-      console.error('[Frontend] Fout in frontend.location.created:', err);
+      log.error('[Frontend] Fout in frontend.location.created:', err);
       await sendToDlq(
         xml,
         err instanceof Error ? err.message : 'Unknown error',

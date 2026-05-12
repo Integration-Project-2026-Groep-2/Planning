@@ -21,4 +21,26 @@
     </xs:complexType>
   </xs:element>
 
+  <xs:element name="LogEvent">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="level" type="SeverityType"/>
+        <xs:element name="timestamp" type="xs:dateTime"/>
+        <xs:element name="service" type="xs:string"/>
+        <xs:element name="data" type="xs:string"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:simpleType name="SeverityType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="DEBUG"/>
+      <xs:enumeration value="INFO"/>
+      <xs:enumeration value="WARN"/>
+      <xs:enumeration value="ERROR"/>
+      <xs:enumeration value="FATAL"/>
+      <xs:enumeration value="PANIC"/>
+    </xs:restriction>
+  </xs:simpleType>
+
 </xs:schema>

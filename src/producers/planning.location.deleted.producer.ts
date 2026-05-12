@@ -1,6 +1,7 @@
 import { getChannel } from '../rabbitmq';
 import { buildXml } from '../utils/xml.builder';
 import { validateXml } from '../utils/xml.validator';
+import { log } from '../utils/logger';
 
 type LocationDeletedPayload = {
   locationId: string;
@@ -22,7 +23,7 @@ export const sendLocationDeleted = async (payload: LocationDeletedPayload) => {
 
     const isValid = validateXml(xml, 'LocationDeleted');
     if (!isValid) {
-      console.error('[Producer] Ongeldige XML voor LocationDeleted');
+      log.error('[Producer] Ongeldige XML voor LocationDeleted');
       return;
     }
 
@@ -31,8 +32,8 @@ export const sendLocationDeleted = async (payload: LocationDeletedPayload) => {
       persistent:  true,
     });
 
-    console.log('[Producer] LocationDeleted verzonden');
+    log.info('[Producer] LocationDeleted verzonden');
   } catch (error) {
-    console.error('[Producer] Fout bij verzenden LocationDeleted:', error);
+    log.error('[Producer] Fout bij verzenden LocationDeleted:', error);
   }
 };

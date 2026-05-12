@@ -1,4 +1,6 @@
 export { startHeartbeatProducer } from './heartbeat.producer';
+export { sendLog } from './log.producer';
+export type { LogLevel } from './log.producer';
 export { sendSessionCreated } from './session.created.producer';
 export { sendSessionCancelled } from './session.cancelled.producer';
 export { sendSessionRescheduled } from './session.rescheduled.producer';

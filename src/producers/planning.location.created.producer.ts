@@ -1,6 +1,7 @@
 import { getChannel } from '../rabbitmq';
 import { buildXml } from '../utils/xml.builder';
 import { validateXml } from '../utils/xml.validator';
+import { log } from '../utils/logger';
 
 type LocationCreatedPayload = {
   locationId: string;
@@ -30,7 +31,7 @@ export const sendLocationCreated = async (payload: LocationCreatedPayload) => {
 
     const isValid = validateXml(xml, 'LocationCreated');
     if (!isValid) {
-      console.error('[Producer] Ongeldige XML voor LocationCreated');
+      log.error('[Producer] Ongeldige XML voor LocationCreated');
       return;
     }
 
@@ -39,8 +40,8 @@ export const sendLocationCreated = async (payload: LocationCreatedPayload) => {
       persistent:  true,
     });
 
-    console.log('[Producer] LocationCreated verzonden');
+    log.info('[Producer] LocationCreated verzonden');
   } catch (error) {
-    console.error('[Producer] Fout bij verzenden LocationCreated:', error);
+    log.error('[Producer] Fout bij verzenden LocationCreated:', error);
   }
 };

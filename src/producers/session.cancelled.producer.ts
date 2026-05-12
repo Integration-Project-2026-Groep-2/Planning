@@ -1,6 +1,7 @@
 import { getChannel } from '../rabbitmq';
 import { buildXml } from '../utils/xml.builder';
 import { validateXml } from '../utils/xml.validator';
+import { log } from '../utils/logger';
 import { generateIcsBase64 } from '../utils/ics.generator';
 
 type SessionCancelledPayload = {
@@ -49,7 +50,7 @@ export const sendSessionCancelled = async (payload: SessionCancelledPayload) => 
 
     const isValid = validateXml(xml, 'SessionCancelled');
     if (!isValid) {
-      console.error('[Producer] Ongeldige XML voor SessionCancelled');
+      log.error('[Producer] Ongeldige XML voor SessionCancelled');
       return;
     }
 
@@ -58,8 +59,8 @@ export const sendSessionCancelled = async (payload: SessionCancelledPayload) => 
       persistent:  true,
     });
 
-    console.log('[Producer] SessionCancelled verzonden (met ICS CANCELLED)');
+    log.info('[Producer] SessionCancelled verzonden (met ICS CANCELLED)');
   } catch (error) {
-    console.error('[Producer] Fout bij verzenden SessionCancelled:', error);
+    log.error('[Producer] Fout bij verzenden SessionCancelled:', error);
   }
 };

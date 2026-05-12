@@ -1,6 +1,7 @@
 import { getChannel } from '../rabbitmq';
 import { buildXml } from '../utils/xml.builder';
 import { validateXml } from '../utils/xml.validator';
+import { log } from '../utils/logger';
 
 type SpeakerUpdatedPayload = {
   speakerId:    string;
@@ -34,7 +35,7 @@ export const sendSpeakerUpdated = async (payload: SpeakerUpdatedPayload) => {
 
     const isValid = validateXml(xml, 'SpeakerUpdated');
     if (!isValid) {
-      console.error('[Producer] Ongeldige XML voor SpeakerUpdated');
+      log.error('[Producer] Ongeldige XML voor SpeakerUpdated');
       return;
     }
 
@@ -43,8 +44,8 @@ export const sendSpeakerUpdated = async (payload: SpeakerUpdatedPayload) => {
       persistent:  true,
     });
 
-    console.log('[Producer] SpeakerUpdated verzonden');
+    log.info('[Producer] SpeakerUpdated verzonden');
   } catch (error) {
-    console.error('[Producer] Fout bij verzenden SpeakerUpdated:', error);
+    log.error('[Producer] Fout bij verzenden SpeakerUpdated:', error);
   }
 };

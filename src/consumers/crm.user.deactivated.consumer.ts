@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { query } from '../db';
 import { isAlreadyProcessed, markAsProcessed } from '../utils/idempotency';
 import { sendToDlq } from '../utils/dlq';
+import { log } from '../utils/logger';
 import crypto from 'crypto';
 
 const schema = z.object({
@@ -56,10 +57,10 @@ export const startUserDeactivatedConsumer = async () => {
       );
 
       await markAsProcessed(messageId);
-      console.log('[CRM] User/Speaker gedeactiveerd');
+      log.info('[CRM] User/Speaker gedeactiveerd');
       channel.ack(msg);
     } catch (err) {
-      console.error('[CRM] Fout in crm.user.deactivated:', err);
+      log.error('[CRM] Fout in crm.user.deactivated:', err);
 
       await sendToDlq(
         xml, 
