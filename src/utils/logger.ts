@@ -4,7 +4,7 @@ type LogInput = string | Error | unknown;
 
 const stringify = (input: LogInput): string => {
   if (input instanceof Error) {
-    return input.stack ? `${input.message}\n${input.stack}` : input.message;
+    return input.stack ?? input.message;
   }
   if (typeof input === 'string') return input;
   try {
