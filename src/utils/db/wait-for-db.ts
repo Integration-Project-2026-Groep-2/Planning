@@ -1,6 +1,6 @@
 import { testConnection } from "../../db";
 
-export const waitForDatabase = async (maxAttempts = 10, delayMs = 2000) => {
+export const waitForDatabase = async (maxAttempts = 20, delayMs = 2000) => {
     console.log("[DB] Bezig met controleren van database verbinding...");
     
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
