@@ -5,6 +5,7 @@ import { isAlreadyProcessed, markAsProcessed } from '../utils/idempotency';
 import { sendToDlq } from '../utils/dlq';
 import { log } from '../utils/logger';
 import { createSession } from '../services/session.service';
+import { query } from '../db';
 import crypto from 'crypto';
 
 const schema = z.object({
@@ -14,7 +15,8 @@ const schema = z.object({
   startTime:  z.string(),
   endTime:    z.string(),
   capacity:   z.preprocess((v) => Number(v), z.number().int().positive()),
-  locationId: z.string().optional(),
+  locationId: z.string().uuid().optional(),
+  speakerId:  z.string().uuid().optional(),
 });
 
 export const startFrontendSessionCreatedConsumer = async () => {
@@ -43,7 +45,7 @@ export const startFrontendSessionCreatedConsumer = async () => {
       const data    = await parseXml(xml, 'SessionCreated');
       const session = schema.parse(data);
 
-      await createSession({
+      const createdSession = await createSession({
         title:      session.title,
         date:       session.date,
         startTime:  session.startTime,
@@ -51,6 +53,17 @@ export const startFrontendSessionCreatedConsumer = async () => {
         capacity:   session.capacity,
         locationId: session.locationId,
       });
+
+      // ── Spreker linken als speakerId meegegeven ──
+      if (session.speakerId) {
+        await query(
+          `INSERT INTO "SessionSpeaker" ("sessionId", "speakerId")
+           VALUES ($1, $2)
+           ON CONFLICT DO NOTHING`,
+          [createdSession.sessionId, session.speakerId]
+        );
+        log.info(`[FRONTEND] Spreker gelinkt aan sessie: ${session.speakerId}`);
+      }
 
       await markAsProcessed(messageId);
       log.info('[FRONTEND] Sessie aangemaakt');

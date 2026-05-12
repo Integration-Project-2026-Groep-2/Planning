@@ -16,10 +16,11 @@
         <xs:element name="date"       type="xs:string"/>
         <xs:element name="startTime"  type="xs:string"/>
         <xs:element name="endTime"    type="xs:string"   minOccurs="0"/>
-        <xs:element name="location"   type="xs:string"   minOccurs="0"/>
-        <xs:element name="locationId" type="xs:string"   minOccurs="0"/>
-        <xs:element name="status"     type="xs:string"   minOccurs="0"/>
         <xs:element name="capacity"   type="xs:int"      minOccurs="0"/>
+        <xs:element name="locationId" type="xs:string"   minOccurs="0"/>
+        <xs:element name="speakerId"  type="xs:string"   minOccurs="0"/>
+        <xs:element name="location"   type="xs:string"   minOccurs="0"/>
+        <xs:element name="status"     type="xs:string"   minOccurs="0"/>
         <xs:element name="icsData"    type="xs:string"   minOccurs="0"/>
         <xs:element name="timestamp"  type="xs:dateTime" minOccurs="0"/>
       </xs:sequence>
