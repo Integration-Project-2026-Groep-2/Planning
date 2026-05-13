@@ -5,4 +5,3 @@ export { startUserDeactivatedConsumer }  from './crm.user.deactivated.consumer';
 export { startLocationCreatedConsumer }   from './frontend.location.created.consumer';
 export { startLocationUpdatedConsumer }   from './frontend.location.updated.consumer';
 export { startLocationDeletedConsumer }   from './frontend.location.deleted.consumer';
-export { startLocationsRequestedConsumer } from './frontend.locations.requested.consumer';
