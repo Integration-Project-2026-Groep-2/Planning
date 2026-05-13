@@ -44,9 +44,6 @@ const schemaMap: Record<string, string> = {
     LocationDeleted: "location.xsd",
     LocationsRequested: "location.xsd",
     LocationsAll: "location.xsd",
-    FrontendLocationCreated: "frontend-location.xsd",
-    FrontendLocationUpdated: "frontend-location.xsd",
-    FrontendLocationDeleted: "frontend-location.xsd",
 
     /*
    |--------------------------------------------------------------------------

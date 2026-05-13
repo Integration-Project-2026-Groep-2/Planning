@@ -39,7 +39,7 @@ export const startLocationCreatedConsumer = async () => {
                 return;
             }
 
-            const data = await parseXml(xml, "FrontendLocationCreated");
+            const data = await parseXml(xml, "LocationCreated");
             const location = schema.parse(data);
 
             await createLocation({

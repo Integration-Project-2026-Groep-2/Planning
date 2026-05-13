@@ -42,7 +42,7 @@ export const startLocationUpdatedConsumer = async () => {
                 return;
             }
 
-            const data = await parseXml(xml, "FrontendLocationUpdated");
+            const data = await parseXml(xml, "LocationUpdated");
             const location = schema.parse(data);
 
             const existingLocation = await getLocationById(location.locationId);

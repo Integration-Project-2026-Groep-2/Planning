@@ -34,7 +34,7 @@ export const startLocationDeletedConsumer = async () => {
                 return;
             }
 
-            const data = await parseXml(xml, "FrontendLocationDeleted");
+            const data = await parseXml(xml, "LocationDeleted");
             const location = schema.parse(data);
 
             await deleteLocation(location.locationId);
