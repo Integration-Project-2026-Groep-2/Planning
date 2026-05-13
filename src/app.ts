@@ -15,11 +15,9 @@ import {
     startLocationCreatedConsumer,
     startLocationUpdatedConsumer,
     startLocationDeletedConsumer,
-    startLocationsRequestedConsumer,
     startSpeakerCreatedConsumer,
     startSpeakerUpdatedConsumer,
     startSpeakerDeactivatedConsumer,
-    startSpeakersRequestedConsumer,
     startRegistrationCreatedConsumer,
     startFrontendSessionRescheduledConsumer,
 } from "./consumers";
@@ -63,7 +61,6 @@ const start = async () => {
         await startLocationCreatedConsumer();
         await startLocationUpdatedConsumer();
         await startLocationDeletedConsumer();
-        await startLocationsRequestedConsumer();
 
         await startFrontendSessionCreatedConsumer();
         await startFrontendSessionUpdatedConsumer();
@@ -73,7 +70,6 @@ const start = async () => {
         await startSpeakerCreatedConsumer();
         await startSpeakerUpdatedConsumer();
         await startSpeakerDeactivatedConsumer();
-        await startSpeakersRequestedConsumer();
 
         await startRegistrationCreatedConsumer();
     } catch (err: any) {
