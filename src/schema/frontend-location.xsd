@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           elementFormDefault="unqualified"
+           version="1.0">
+
+  <xs:simpleType name="UUIDType">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="PositiveIntType">
+    <xs:restriction base="xs:integer">
+      <xs:minInclusive value="1"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="LocationStatusType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="beschikbaar"/>
+      <xs:enumeration value="onbeschikbaar"/>
+      <xs:enumeration value="maintenance"/>
+      <xs:enumeration value="reserved"/>
+    </xs:restriction>
+  </xs:simpleType>
+  
+  <xs:element name="FrontendLocationCreated">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="roomName" type="xs:string"/>
+        <xs:element name="capacity" type="PositiveIntType"/>
+        <xs:element name="address" type="xs:string" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="FrontendLocationUpdated">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="locationId" type="UUIDType"/>
+        <xs:element name="roomName" type="xs:string"/>
+        <xs:element name="capacity" type="PositiveIntType"/>
+        <xs:element name="address" type="xs:string" minOccurs="0"/>
+        <xs:element name="status" type="LocationStatusType"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="FrontendLocationDeleted">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="locationId" type="UUIDType"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

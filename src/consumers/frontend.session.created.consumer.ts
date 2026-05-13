@@ -8,12 +8,25 @@ import { createSession } from "../services/session.service";
 import { query } from "../db";
 import crypto from "crypto";
 
+const normalizeTime = (value: unknown): string => {
+    if (typeof value !== "string") return "";
+    const time = value.trim();
+
+    // Accept HH:mm and normalize to HH:mm:ss; keep HH:mm:ss as-is.
+    const hhmm = /^([01]\d|2[0-3]):([0-5]\d)$/;
+    const hhmmss = /^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/;
+
+    if (hhmmss.test(time)) return time;
+    if (hhmm.test(time)) return `${time}:00`;
+    return "";
+};
+
 const schema = z.object({
     sessionId: z.string().uuid().optional(),
     title: z.string(),
     date: z.string(),
-    startTime: z.string(),
-    endTime: z.string(),
+    startTime: z.preprocess(normalizeTime, z.string().min(1)),
+    endTime: z.preprocess(normalizeTime, z.string().min(1)),
     capacity: z.preprocess((v) => Number(v), z.number().int().positive()),
     locationId: z.string().uuid().optional(),
     speakerId: z.string().uuid().optional(),
