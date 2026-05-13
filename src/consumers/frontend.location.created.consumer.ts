@@ -8,6 +8,7 @@ import { createLocation } from "../services/location.service";
 import crypto from "crypto";
 
 const schema = z.object({
+    locationId: z.string().min(1),
     roomName: z.string(),
     address: z.string().optional(),
     capacity: z.preprocess((v) => Number(v), z.number().int().positive()),
@@ -43,6 +44,7 @@ export const startLocationCreatedConsumer = async () => {
             const location = schema.parse(data);
 
             await createLocation({
+                locationId: location.locationId,
                 roomName: location.roomName,
                 address: location.address,
                 capacity: location.capacity,
