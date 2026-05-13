@@ -4,13 +4,11 @@ export { startUserDeactivatedConsumer }   from './crm.user.deactivated.consumer'
 export { startLocationCreatedConsumer }    from './frontend.location.created.consumer';
 export { startLocationUpdatedConsumer }    from './frontend.location.updated.consumer';
 export { startLocationDeletedConsumer }    from './frontend.location.deleted.consumer';
-export { startLocationsRequestedConsumer } from './frontend.locations.requested.consumer';
 export { startFrontendSessionCreatedConsumer } from './frontend.session.created.consumer';
 export { startFrontendSessionUpdatedConsumer } from './frontend.session.updated.consumer';
 export { startFrontendSessionCancelledConsumer } from './frontend.session.cancelled.consumer';
 export { startSpeakerCreatedConsumer }     from './frontend.speaker.created.consumer';
 export { startSpeakerUpdatedConsumer }     from './frontend.speaker.updated.consumer';
 export { startSpeakerDeactivatedConsumer } from './frontend.speaker.deactivated.consumer';
-export { startSpeakersRequestedConsumer }  from './frontend.speakers.requested.consumer';
 export { startRegistrationCreatedConsumer } from './frontend.registration.created.consumer';
 export { startFrontendSessionRescheduledConsumer } from './frontend.session.rescheduled.consumer';
