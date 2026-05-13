@@ -12,7 +12,6 @@ import {
     startFrontendSessionCreatedConsumer,
     startFrontendSessionUpdatedConsumer,
     startFrontendSessionCancelledConsumer,
-    startFrontendSessionsRequestedConsumer,
     startLocationCreatedConsumer,
     startLocationUpdatedConsumer,
     startLocationDeletedConsumer,
@@ -69,7 +68,6 @@ const start = async () => {
         await startFrontendSessionCreatedConsumer();
         await startFrontendSessionUpdatedConsumer();
         await startFrontendSessionCancelledConsumer();
-        await startFrontendSessionsRequestedConsumer();
         await startFrontendSessionRescheduledConsumer();
 
         await startSpeakerCreatedConsumer();

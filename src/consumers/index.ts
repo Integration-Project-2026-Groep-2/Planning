@@ -8,7 +8,6 @@ export { startLocationsRequestedConsumer } from './frontend.locations.requested.
 export { startFrontendSessionCreatedConsumer } from './frontend.session.created.consumer';
 export { startFrontendSessionUpdatedConsumer } from './frontend.session.updated.consumer';
 export { startFrontendSessionCancelledConsumer } from './frontend.session.cancelled.consumer';
-export { startFrontendSessionsRequestedConsumer } from './frontend.sessions.requested.consumer';
 export { startSpeakerCreatedConsumer }     from './frontend.speaker.created.consumer';
 export { startSpeakerUpdatedConsumer }     from './frontend.speaker.updated.consumer';
 export { startSpeakerDeactivatedConsumer } from './frontend.speaker.deactivated.consumer';
