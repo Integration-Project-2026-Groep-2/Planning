@@ -25,7 +25,6 @@ export const setupRabbitMQ = async () => {
         { exchange: "frontend.topic", queue: "planning.session.created",     routingKey: "frontend.session.created" },
         { exchange: "frontend.topic", queue: "planning.session.updated",     routingKey: "frontend.session.updated" },
         { exchange: "frontend.topic", queue: "planning.session.cancelled",   routingKey: "frontend.session.cancelled" },
-        { exchange: "frontend.topic", queue: "planning.sessions.requested",  routingKey: "frontend.sessions.requested" },
 
         { exchange: "frontend.topic", queue: "planning.speaker.created",     routingKey: "frontend.speaker.created" },
         { exchange: "frontend.topic", queue: "planning.speaker.updated",     routingKey: "frontend.speaker.updated" },

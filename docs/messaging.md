@@ -300,7 +300,7 @@ Gedrag:
 
 ## frontend.session.created
 
-Exchange: session.topic (topic)  
+Exchange: frontend.topic (topic)  
 Routing key: frontend.session.created  
 Root element: SessionCreated  
 
@@ -324,7 +324,7 @@ Velden:
 
 ## frontend.session.updated
 
-Exchange: session.topic (topic)  
+Exchange: frontend.topic (topic)  
 Routing key: frontend.session.updated  
 Root element: SessionUpdated  
 
@@ -348,7 +348,7 @@ Velden:
 
 ## frontend.session.cancelled
 
-Exchange: session.topic (topic)  
+Exchange: frontend.topic (topic)  
 Routing key: frontend.session.cancelled  
 Root element: SessionCancelled  
 

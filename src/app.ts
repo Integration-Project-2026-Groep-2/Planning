@@ -12,15 +12,12 @@ import {
     startFrontendSessionCreatedConsumer,
     startFrontendSessionUpdatedConsumer,
     startFrontendSessionCancelledConsumer,
-    startFrontendSessionsRequestedConsumer,
     startLocationCreatedConsumer,
     startLocationUpdatedConsumer,
     startLocationDeletedConsumer,
-    startLocationsRequestedConsumer,
     startSpeakerCreatedConsumer,
     startSpeakerUpdatedConsumer,
     startSpeakerDeactivatedConsumer,
-    startSpeakersRequestedConsumer,
     startRegistrationCreatedConsumer,
     startFrontendSessionRescheduledConsumer,
 } from "./consumers";
@@ -64,18 +61,15 @@ const start = async () => {
         await startLocationCreatedConsumer();
         await startLocationUpdatedConsumer();
         await startLocationDeletedConsumer();
-        await startLocationsRequestedConsumer();
 
         await startFrontendSessionCreatedConsumer();
         await startFrontendSessionUpdatedConsumer();
         await startFrontendSessionCancelledConsumer();
-        await startFrontendSessionsRequestedConsumer();
         await startFrontendSessionRescheduledConsumer();
 
         await startSpeakerCreatedConsumer();
         await startSpeakerUpdatedConsumer();
         await startSpeakerDeactivatedConsumer();
-        await startSpeakersRequestedConsumer();
 
         await startRegistrationCreatedConsumer();
     } catch (err: any) {
