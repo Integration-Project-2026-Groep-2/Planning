@@ -15,14 +15,8 @@ const schema = z.object({
     startTime: z.string(),
     endTime: z.string(),
     capacity: z.preprocess((v) => Number(v), z.number().int().positive()),
-    locationId: z.preprocess((v) => {
-        if (v === "" || v === null || v === undefined) return undefined;
-        return String(v);
-    }, z.string().optional()),
-    speakerId: z.preprocess((v) => {
-        if (v === "" || v === null || v === undefined) return undefined;
-        return String(v);
-    }, z.string().optional()),
+    locationId: z.string().uuid().optional(),
+    speakerId: z.string().uuid().optional(),
 });
 
 export const startFrontendSessionCreatedConsumer = async () => {
