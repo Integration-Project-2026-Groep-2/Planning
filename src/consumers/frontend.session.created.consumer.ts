@@ -22,7 +22,7 @@ const normalizeTime = (value: unknown): string => {
 };
 
 const schema = z.object({
-    sessionId: z.string().uuid().optional(),
+    sessionId: z.string().uuid(),
     title: z.string(),
     date: z.string(),
     startTime: z.preprocess(normalizeTime, z.string().min(1)),
@@ -59,6 +59,7 @@ export const startFrontendSessionCreatedConsumer = async () => {
             const session = schema.parse(data);
 
             const createdSession = await createSession({
+                sessionId: session.sessionId,
                 title: session.title,
                 date: session.date,
                 startTime: session.startTime,

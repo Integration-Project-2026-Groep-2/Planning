@@ -11,7 +11,7 @@
   <xs:element name="SessionCreated">
     <xs:complexType>
       <xs:sequence>
-        <xs:element name="sessionId"  type="uuid"        minOccurs="0"/>
+        <xs:element name="sessionId"  type="uuid"/>
         <xs:element name="title"      type="xs:string"/>
         <xs:element name="date"       type="xs:string"/>
         <xs:element name="startTime"  type="xs:string"/>
