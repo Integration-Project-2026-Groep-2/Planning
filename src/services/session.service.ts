@@ -146,8 +146,9 @@ export const createSession = async (data: CreateSessionDTO) => {
         date: formatDate(createdSession.date),
         startTime: createdSession.startTime,
         endTime: createdSession.endTime,
-        location: locationName,
         capacity: createdSession.capacity,
+        locationId: createdSession.locationId,
+        location: locationName,
         status: mapSessionStatus(createdSession.status),
         icsData,
     });
