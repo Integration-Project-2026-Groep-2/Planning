@@ -110,3 +110,15 @@ BEGIN
 END $$;
 ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "isActive" BOOLEAN NOT NULL DEFAULT true;
 ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "crmMasterId" UUID;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'user_crmmasterid_unique'
+    ) THEN
+        ALTER TABLE "User"
+            ADD CONSTRAINT user_crmmasterid_unique UNIQUE ("crmMasterId");
+    END IF;
+END $$;
