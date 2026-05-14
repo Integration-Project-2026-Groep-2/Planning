@@ -13,6 +13,7 @@ const schema = z.object({
     sessionId: z.string().uuid(),
     participantId: z.string().uuid(),
     crmMasterId: z.string().uuid(),
+    isActive: z.boolean(),
     timestamp: z.string().optional(),
 });
 
@@ -55,9 +56,10 @@ export const startRegistrationCreatedConsumer = async () => {
             }
 
             // ── Registratie aanmaken en persist naar DB via service ──
-            const result = await registerParticipant(registration.sessionId, {
+            await registerParticipant(registration.sessionId, {
                 participantId: registration.participantId,
                 crmMasterId: registration.crmMasterId,
+                isActive: registration.isActive,
             });
 
             await markAsProcessed(messageId);

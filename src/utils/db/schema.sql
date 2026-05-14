@@ -52,6 +52,7 @@ CREATE TABLE IF NOT EXISTS "Registration" (
     "sessionId"        UUID      NOT NULL REFERENCES "Session"("sessionId") ON DELETE CASCADE,
     "participantId"    UUID      NOT NULL REFERENCES "Participant"("participantId"),
     "crmMasterId"      UUID,
+    "isActive"         BOOLEAN   NOT NULL DEFAULT true,
     "registrationTime" TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
