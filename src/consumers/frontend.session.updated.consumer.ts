@@ -56,7 +56,23 @@ export const startFrontendSessionUpdatedConsumer = async () => {
             const data = await parseXml(xml, "SessionUpdated");
             const session = schema.parse(data);
 
-            await updateSession(session.sessionId, session);
+            // Map SessionUpdated fields to UpdateSessionDTO
+            const updatePayload: any = {};
+
+            if (session.title) updatePayload.title = session.title;
+            if (session.title) updatePayload.description = session.title;
+            if (session.newTime)
+                updatePayload.date = session.newTime.split("T")[0]; // Extract date from newTime
+            if (session.newStartTime)
+                updatePayload.startTime = session.newStartTime;
+            if (session.newEndTime) updatePayload.endTime = session.newEndTime;
+            if (session.newStatus) updatePayload.status = session.newStatus;
+            if (session.newLocationId)
+                updatePayload.locationId = session.newLocationId;
+            if (session.newCapacity)
+                updatePayload.capacity = session.newCapacity;
+
+            await updateSession(session.sessionId, updatePayload);
 
             await markAsProcessed(messageId);
             log.info("[FRONTEND] Sessie bijgewerkt");
