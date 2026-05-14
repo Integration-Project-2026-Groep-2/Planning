@@ -9,6 +9,7 @@ import crypto from "crypto";
 
 const schema = z.object({
     sessionId: z.string().uuid(),
+    sessionName: z.string().optional(),
     title: z.string().optional(),
     date: z.string().optional(),
     startTime: z.string().optional(),
@@ -59,8 +60,9 @@ export const startFrontendSessionUpdatedConsumer = async () => {
             // Map SessionUpdated fields to UpdateSessionDTO
             const updatePayload: any = {};
 
-            if (session.title) updatePayload.title = session.title;
-            if (session.title) updatePayload.description = session.title;
+            if (session.sessionName) updatePayload.title = session.sessionName;
+            if (session.sessionName)
+                updatePayload.description = session.sessionName;
             if (session.newTime)
                 updatePayload.date = session.newTime.split("T")[0]; // Extract date from newTime
             if (session.newStartTime)
