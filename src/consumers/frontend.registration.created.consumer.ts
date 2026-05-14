@@ -13,7 +13,14 @@ const schema = z.object({
     sessionId: z.string().uuid(),
     participantId: z.string().uuid(),
     crmMasterId: z.string().uuid(),
-    isActive: z.boolean(),
+    isActive: z.preprocess((val) => {
+        if (typeof val === "string") {
+            const v = val.toLowerCase();
+            if (v === "true") return true;
+            if (v === "false") return false;
+        }
+        return val;
+    }, z.boolean()),
     timestamp: z.string().optional(),
 });
 
