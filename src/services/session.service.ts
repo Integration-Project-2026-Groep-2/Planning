@@ -72,6 +72,11 @@ export const getSessionById = async (sessionId: string) => {
 };
 
 export const createSession = async (data: CreateSessionDTO) => {
+    // If caller supplied a sessionId (likely from a message), ensure it was validated
+    if (data.sessionId && !data.validated) {
+        throw new Error("Session message missing XSD validation");
+    }
+
     if (data.locationId) {
         const conflict = await checkLocationConflict(
             data.locationId,

@@ -18,6 +18,13 @@ export const getLocationById = async (locationId: string) => {
 };
 
 export const createLocation = async (data: CreateLocationDTO) => {
+    // If caller supplied a locationId (likely from a message), ensure it was validated
+    if (data.locationId && !data.validated) {
+        const err: any = new Error("Location message missing XSD validation");
+        err.code = "UNVALIDATED_MESSAGE";
+        throw err;
+    }
+
     // Duplicate check
     const existing = await query(
         `SELECT 1 FROM "Location" WHERE "roomName" = $1`,

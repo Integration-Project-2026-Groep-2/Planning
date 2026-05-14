@@ -22,6 +22,7 @@ export interface CreateSessionDTO {
     status?: "actief" | "geannuleerd" | "volzet" | "concept";
     locationId?: string;
     capacity: number;
+    validated?: boolean;
 }
 
 export interface UpdateSessionDTO {
@@ -34,7 +35,6 @@ export interface UpdateSessionDTO {
     locationId?: string;
     capacity?: number;
 }
-
 export interface RescheduleSessionDTO {
     date: string;
     startTime: string;

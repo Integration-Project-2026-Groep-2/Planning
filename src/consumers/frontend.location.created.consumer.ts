@@ -49,6 +49,7 @@ export const startLocationCreatedConsumer = async () => {
                 address: location.address,
                 capacity: location.capacity,
                 status: location.status ?? "beschikbaar",
+                validated: true,
             });
 
             await markAsProcessed(messageId);

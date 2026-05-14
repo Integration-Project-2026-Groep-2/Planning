@@ -66,6 +66,7 @@ export const startFrontendSessionCreatedConsumer = async () => {
                 endTime: session.endTime,
                 capacity: session.capacity,
                 locationId: session.locationId,
+                validated: true,
             });
 
             // ── Spreker linken als speakerId meegegeven ──

@@ -12,6 +12,7 @@ export interface CreateLocationDTO {
     address?: string;
     capacity: number;
     status?: "beschikbaar" | "gereserveerd" | "niet beschikbaar";
+    validated?: boolean;
 }
 
 export interface UpdateLocationDTO {
