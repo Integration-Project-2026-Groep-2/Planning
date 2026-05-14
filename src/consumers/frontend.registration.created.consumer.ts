@@ -11,7 +11,7 @@ import crypto from "crypto";
 const schema = z.object({
     registrationId: z.string().uuid(),
     sessionId: z.string().uuid(),
-    participantId: z.string().uuid(),
+    userId: z.string().uuid(),
     crmMasterId: z.string().uuid(),
     isActive: z.preprocess((val) => {
         if (typeof val === "string") {
@@ -50,29 +50,29 @@ export const startRegistrationCreatedConsumer = async () => {
             const data = await parseXml(xml, "RegistrationCreated");
             const registration = schema.parse(data);
 
-            // ── Verifieer dat deelnemer bestaat ──
+            // ── Verifieer dat gebruiker bestaat ──
             const existing = await query(
-                `SELECT "participantId" FROM "Participant" WHERE "participantId" = $1 LIMIT 1`,
-                [registration.participantId],
+                `SELECT "userId" FROM "User" WHERE "userId" = $1 LIMIT 1`,
+                [registration.userId],
             );
 
             if (existing.rows.length === 0) {
                 throw new Error(
-                    `Participant niet gevonden voor participantId: ${registration.participantId}`,
+                    `Gebruiker niet gevonden voor userId: ${registration.userId}`,
                 );
             }
 
             // ── Registratie aanmaken en persist naar DB via service ──
             await registerParticipant(registration.sessionId, {
-                participantId: registration.participantId,
+                userId: registration.userId,
                 crmMasterId: registration.crmMasterId,
                 isActive: registration.isActive,
             });
 
             await markAsProcessed(messageId);
             log.info(
-                "[Frontend] Registratie aangemaakt voor participantId:",
-                registration.participantId,
+                "[Frontend] Registratie aangemaakt voor userId:",
+                registration.userId,
             );
             channel.ack(msg);
         } catch (err) {

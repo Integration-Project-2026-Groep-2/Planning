@@ -10,7 +10,7 @@ const router = Router({ mergeParams: true });
 
 // ── Zod schema ──
 const RegisterSchema = z.object({
-    participantId: z.string().uuid("participantId moet een geldig UUID zijn"),
+    userId: z.string().uuid("userId moet een geldig UUID zijn"),
     crmMasterId: z
         .string()
         .uuid("crmMasterId moet een geldig UUID zijn")
@@ -19,16 +19,16 @@ const RegisterSchema = z.object({
 });
 
 const CancelSchema = z.object({
-    participantId: z.string().uuid("participantId moet een geldig UUID zijn"),
+    userId: z.string().uuid("userId moet een geldig UUID zijn"),
 });
 
 // ── GET /sessions/:id/registrations ──
 router.get("/", async (req: Request, res: Response) => {
     try {
         const result = await query(
-            `SELECT r.*, p."firstName", p."lastName", p."email", p."company"
+            `SELECT r.*, u."firstName", u."lastName", u."email", u."company"
        FROM "Registration" r
-       JOIN "Participant" p ON r."participantId" = p."participantId"
+       JOIN "User" u ON r."userId" = u."userId"
        WHERE r."sessionId" = $1
        ORDER BY r."registrationTime" DESC`,
             [req.params.id],
@@ -85,7 +85,7 @@ router.delete("/", async (req: Request, res: Response) => {
     try {
         const registration = await cancelRegistration(
             req.params.id as string,
-            parsed.data.participantId,
+            parsed.data.userId,
         );
         res.status(200).json({
             message: "Inschrijving geannuleerd",

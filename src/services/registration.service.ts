@@ -24,8 +24,8 @@ export const registerParticipant = async (
     // Controleer of deelnemer al ingeschreven is
     const existing = await query(
         `SELECT * FROM "Registration"
-     WHERE "sessionId" = $1 AND "participantId" = $2`,
-        [sessionId, data.participantId],
+     WHERE "sessionId" = $1 AND "userId" = $2`,
+        [sessionId, data.userId],
     );
     if (existing.rows.length > 0) {
         throw new Error("ALREADY_REGISTERED");
@@ -46,15 +46,10 @@ export const registerParticipant = async (
     // Inschrijving opslaan
     const result = await query(
         `INSERT INTO "Registration"
-      ("sessionId", "participantId", "crmMasterId", "isActive")
+      ("sessionId", "userId", "crmMasterId", "isActive")
      VALUES ($1, $2, $3, $4)
      RETURNING *`,
-        [
-            sessionId,
-            data.participantId,
-            data.crmMasterId || null,
-            data.isActive,
-        ],
+        [sessionId, data.userId, data.crmMasterId || null, data.isActive],
     );
     const registration = result.rows[0];
 
@@ -63,7 +58,7 @@ export const registerParticipant = async (
     // RabbitMQ: ParticipantRegistered event versturen
     await sendParticipantRegistered({
         sessionId,
-        crmMasterId: data.crmMasterId || data.participantId,
+        crmMasterId: data.crmMasterId || data.userId,
         currentRegistrations: newCount,
         capacity: session.capacity,
         registrationTime: registration.registrationTime
@@ -89,15 +84,12 @@ export const registerParticipant = async (
 };
 
 // ── Inschrijving annuleren ──
-export const cancelRegistration = async (
-    sessionId: string,
-    participantId: string,
-) => {
+export const cancelRegistration = async (sessionId: string, userId: string) => {
     // Controleer of inschrijving bestaat
     const existing = await query(
         `SELECT * FROM "Registration"
-     WHERE "sessionId" = $1 AND "participantId" = $2`,
-        [sessionId, participantId],
+     WHERE "sessionId" = $1 AND "userId" = $2`,
+        [sessionId, userId],
     );
     if (existing.rows.length === 0) {
         throw new Error("REGISTRATION_NOT_FOUND");
@@ -106,9 +98,9 @@ export const cancelRegistration = async (
     // Inschrijving verwijderen
     const result = await query(
         `DELETE FROM "Registration"
-     WHERE "sessionId" = $1 AND "participantId" = $2
+     WHERE "sessionId" = $1 AND "userId" = $2
      RETURNING *`,
-        [sessionId, participantId],
+        [sessionId, userId],
     );
 
     // Als sessie volzet was → terug op actief zetten
