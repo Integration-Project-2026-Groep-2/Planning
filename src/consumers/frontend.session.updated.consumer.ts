@@ -18,6 +18,16 @@ const schema = z.object({
         z.number().optional(),
     ),
     locationId: z.string().optional(),
+    newTime: z.string().optional(),
+    newStartTime: z.string().optional(),
+    newEndTime: z.string().optional(),
+    newLocation: z.string().optional(),
+    newLocationId: z.string().optional(),
+    newCapacity: z.preprocess(
+        (v) => (v ? Number(v) : undefined),
+        z.number().optional(),
+    ),
+    newStatus: z.string().optional(),
 });
 
 export const startFrontendSessionUpdatedConsumer = async () => {
