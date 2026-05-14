@@ -11,10 +11,6 @@ const router = Router({ mergeParams: true });
 // ── Zod schema ──
 const RegisterSchema = z.object({
     userId: z.string().uuid("userId moet een geldig UUID zijn"),
-    crmMasterId: z
-        .string()
-        .uuid("crmMasterId moet een geldig UUID zijn")
-        .optional(),
     isActive: z.boolean().default(true),
 });
 

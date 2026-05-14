@@ -12,7 +12,6 @@ const schema = z.object({
     registrationId: z.string().uuid(),
     sessionId: z.string().uuid(),
     userId: z.string().uuid(),
-    crmMasterId: z.string().uuid(),
     isActive: z.preprocess((val) => {
         if (typeof val === "string") {
             const v = val.toLowerCase();
@@ -65,7 +64,6 @@ export const startRegistrationCreatedConsumer = async () => {
             // ── Registratie aanmaken en persist naar DB via service ──
             await registerParticipant(registration.sessionId, {
                 userId: registration.userId,
-                crmMasterId: registration.crmMasterId,
                 isActive: registration.isActive,
             });
 

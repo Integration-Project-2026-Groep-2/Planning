@@ -51,7 +51,6 @@ CREATE TABLE IF NOT EXISTS "Registration" (
     "registrationId"   UUID      PRIMARY KEY DEFAULT gen_random_uuid(),
     "sessionId"        UUID      NOT NULL REFERENCES "Session"("sessionId") ON DELETE CASCADE,
     "userId"           UUID      NOT NULL REFERENCES "User"("userId"),
-    "crmMasterId"      UUID,
     "isActive"         BOOLEAN   NOT NULL DEFAULT true,
     "registrationTime" TIMESTAMP NOT NULL DEFAULT NOW()
 );

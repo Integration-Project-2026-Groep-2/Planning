@@ -59,7 +59,6 @@ const mockRegistration = {
     registrationId: "r1b2c3d4-e5f6-7890-abcd-ef1234567891",
     sessionId: SESSION_ID,
     userId: USER_ID,
-    crmMasterId: null,
     isActive: true,
     registrationTime: new Date().toISOString(),
 };

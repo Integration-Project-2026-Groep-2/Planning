@@ -46,10 +46,10 @@ export const registerParticipant = async (
     // Inschrijving opslaan
     const result = await query(
         `INSERT INTO "Registration"
-      ("sessionId", "userId", "crmMasterId", "isActive")
-     VALUES ($1, $2, $3, $4)
+      ("sessionId", "userId", "isActive")
+     VALUES ($1, $2, $3)
      RETURNING *`,
-        [sessionId, data.userId, data.crmMasterId || null, data.isActive],
+        [sessionId, data.userId, data.isActive],
     );
     const registration = result.rows[0];
 
@@ -58,7 +58,6 @@ export const registerParticipant = async (
     // RabbitMQ: ParticipantRegistered event versturen
     await sendParticipantRegistered({
         sessionId,
-        crmMasterId: data.crmMasterId || data.userId,
         currentRegistrations: newCount,
         capacity: session.capacity,
         registrationTime: registration.registrationTime
@@ -76,7 +75,6 @@ export const registerParticipant = async (
             sessionId,
             currentRegistrations: newCount,
             capacity: session.capacity,
-            crmMasterId: data.crmMasterId,
         });
     }
 
