@@ -51,13 +51,13 @@ export const startRegistrationCreatedConsumer = async () => {
 
             // ── Verifieer dat gebruiker bestaat ──
             const existing = await query(
-                `SELECT "userId" FROM "User" WHERE "userId" = $1 LIMIT 1`,
+                `SELECT "crmMasterId" FROM "User" WHERE "crmMasterId" = $1 LIMIT 1`,
                 [registration.userId],
             );
 
             if (existing.rows.length === 0) {
                 throw new Error(
-                    `Gebruiker niet gevonden voor userId: ${registration.userId}`,
+                    `Gebruiker niet gevonden voor crmMasterId: ${registration.userId}`,
                 );
             }
 
