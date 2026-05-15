@@ -5,7 +5,7 @@ import { isAlreadyProcessed, markAsProcessed } from "../utils/idempotency";
 import { sendToDlq } from "../utils/dlq";
 import { log } from "../utils/logger";
 import { query } from "../db";
-import { registerParticipant } from "../services/registration.service";
+import { registerParticipant, cancelRegistration } from "../services/registration.service";
 import crypto from "crypto";
 
 const schema = z.object({
@@ -61,17 +61,28 @@ export const startRegistrationCreatedConsumer = async () => {
                 );
             }
 
-            // ── Registratie aanmaken en persist naar DB via service ──
-            await registerParticipant(registration.sessionId, {
-                userId: registration.userId,
-                isActive: registration.isActive,
-            });
+            // ── Registratie aanmaken of annuleren ──
+            if (registration.isActive) {
+                await registerParticipant(registration.sessionId, {
+                    userId: registration.userId,
+                    isActive: registration.isActive,
+                });
+                log.info(
+                    "[Frontend] Registratie aangemaakt voor crmMasterId:",
+                    registration.userId,
+                );
+            } else {
+                await cancelRegistration(
+                    registration.sessionId,
+                    registration.userId,
+                );
+                log.info(
+                    "[Frontend] Registratie geannuleerd voor crmMasterId:",
+                    registration.userId,
+                );
+            }
 
             await markAsProcessed(messageId);
-            log.info(
-                "[Frontend] Registratie aangemaakt voor userId:",
-                registration.userId,
-            );
             channel.ack(msg);
         } catch (err) {
             log.error("[Frontend] Fout in frontend.registration.created:", err);
