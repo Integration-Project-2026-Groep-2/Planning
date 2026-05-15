@@ -34,6 +34,7 @@ export interface UpdateSessionDTO {
     status?: "actief" | "geannuleerd" | "volzet" | "concept";
     locationId?: string;
     capacity?: number;
+    speakerId?: string;
 }
 export interface RescheduleSessionDTO {
     date: string;

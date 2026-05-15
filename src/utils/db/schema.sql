@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS "Speaker" (
     "lastName"    VARCHAR(100) NOT NULL,
     "email"       VARCHAR(255) NOT NULL,
     "phoneNumber" VARCHAR(20),
-    "company"     VARCHAR(255),
+    "companyId"   UUID,
     "isActive"    BOOLEAN      NOT NULL DEFAULT true
 );
 
@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS "Session" (
 CREATE TABLE IF NOT EXISTS "SessionSpeaker" (
     "sessionSpeakerId" UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     "sessionId"        UUID        NOT NULL REFERENCES "Session"("sessionId") ON DELETE CASCADE,
-    "speakerId"        UUID        NOT NULL REFERENCES "Speaker"("speakerId") ON DELETE CASCADE,
+    "speakerId"        UUID        NOT NULL,
     "role"             VARCHAR(100),
     "confirmed"        BOOLEAN     NOT NULL DEFAULT false
 );

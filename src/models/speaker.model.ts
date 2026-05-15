@@ -5,7 +5,7 @@ export interface Speaker {
   lastName:    string;
   email:       string;
   phoneNumber?: string;
-  company?:    string;
+  companyId?:    string;
   isActive:    boolean;
 }
 
@@ -14,7 +14,7 @@ export interface CreateSpeakerDTO {
   lastName:     string;
   email:        string;
   phoneNumber?: string;
-  company?:     string;
+  companyId?:     string;
 }
 
 export interface UpdateSpeakerDTO {
@@ -22,5 +22,5 @@ export interface UpdateSpeakerDTO {
   lastName?:    string;
   email?:       string;
   phoneNumber?: string;
-  company?:     string;
+  companyId?:     string;
 }

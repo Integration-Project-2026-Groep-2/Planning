@@ -30,6 +30,7 @@ const schema = z.object({
         z.number().optional(),
     ),
     newStatus: z.string().optional(),
+    speakerId: z.string().optional(),
 });
 
 export const startFrontendSessionUpdatedConsumer = async () => {
@@ -74,6 +75,8 @@ export const startFrontendSessionUpdatedConsumer = async () => {
                 updatePayload.locationId = session.newLocationId;
             if (session.newCapacity)
                 updatePayload.capacity = session.newCapacity;
+            if (session.speakerId)
+                updatePayload.speakerId = session.speakerId;
 
             await updateSession(session.sessionId, updatePayload);
 

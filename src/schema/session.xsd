@@ -28,7 +28,7 @@
     </xs:complexType>
   </xs:element>
 
-  <xs:element name="SessionUpdated">
+<xs:element name="SessionUpdated">
     <xs:complexType>
       <xs:sequence>
         <xs:element name="sessionId"   type="uuid"/>
@@ -42,6 +42,7 @@
         <xs:element name="newLocationId" type="uuid"      minOccurs="0"/>
         <xs:element name="newCapacity"   type="xs:int"    minOccurs="0"/>
         <xs:element name="newStatus"     type="xs:string" minOccurs="0"/>
+        <xs:element name="speakerId"     type="uuid"      minOccurs="0"/>
         <xs:element name="participantIds" minOccurs="0">
           <xs:complexType>
             <xs:sequence>

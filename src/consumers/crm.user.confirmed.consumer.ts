@@ -62,9 +62,9 @@ export const startUserConfirmedConsumer = async () => {
         if (!existingSpeaker.rowCount || existingSpeaker.rowCount === 0) {
           await query(
             `INSERT INTO "Speaker"
-              ("crmMasterId", "firstName", "lastName", "email", "phoneNumber", "isActive")
-             VALUES ($1, $2, $3, $4, $5, $6)`,
-            [user.id, user.firstName, user.lastName, user.email, user.phone || null, user.isActive]
+              ("crmMasterId", "firstName", "lastName", "email", "phoneNumber", "isActive", "companyId")
+             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+            [user.id, user.firstName, user.lastName, user.email, user.phone || null, user.isActive, user.companyId || null]
           );
           log.info('[CRM] Speaker aangemaakt');
         }
@@ -78,17 +78,17 @@ export const startUserConfirmedConsumer = async () => {
         if (existingUser.rowCount && existingUser.rowCount > 0) {
           await query(
             `UPDATE "User"
-             SET "crmMasterId" = $1, "firstName" = $2, "lastName" = $3, "role" = $4, "isActive" = $5
-             WHERE "userId" = $6`,
-            [user.id, user.firstName, user.lastName, user.role, user.isActive, existingUser.rows[0].userId]
+             SET "crmMasterId" = $1, "firstName" = $2, "lastName" = $3, "role" = $4, "isActive" = $5, "company" = $6
+             WHERE "userId" = $7`,
+            [user.id, user.firstName, user.lastName, user.role, user.isActive, user.companyId || null, existingUser.rows[0].userId]
           );
           log.info('[CRM] User bijgewerkt met CRM data');
         } else {
           await query(
             `INSERT INTO "User"
-              ("crmMasterId", "firstName", "lastName", "email", "role", "isActive")
-             VALUES ($1, $2, $3, $4, $5, $6)`,
-            [user.id, user.firstName, user.lastName, user.email, user.role, user.isActive]
+              ("crmMasterId", "firstName", "lastName", "email", "role", "isActive", "company")
+             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+            [user.id, user.firstName, user.lastName, user.email, user.role, user.isActive, user.companyId || null]
           );
           log.info('[CRM] Nieuwe user aangemaakt vanuit CRM');
         }

@@ -202,6 +202,17 @@ export const updateSession = async (
 
     const updatedSession = result.rows[0] || null;
 
+    if (updatedSession && data.speakerId) {
+        await query(
+            `DELETE FROM "SessionSpeaker" WHERE "sessionId" = $1`,
+            [sessionId],
+        );
+        await query(
+            `INSERT INTO "SessionSpeaker" ("sessionId", "speakerId") VALUES ($1, $2)`,
+            [sessionId, data.speakerId],
+        );
+    }
+
     if (updatedSession) {
         const currentDate = formatDate(current.date);
         const updatedDate = formatDate(updatedSession.date);

@@ -28,7 +28,7 @@ export const getSpeakerById = async (speakerId: string) => {
 export const createSpeaker = async (data: CreateSpeakerDTO) => {
   const result = await query(
     `INSERT INTO "Speaker"
-      ("firstName", "lastName", "email", "phoneNumber", "company")
+      ("firstName", "lastName", "email", "phoneNumber", "companyId")
      VALUES ($1, $2, $3, $4, $5)
      RETURNING *`,
     [
@@ -36,7 +36,7 @@ export const createSpeaker = async (data: CreateSpeakerDTO) => {
       data.lastName,
       data.email,
       data.phoneNumber || null,
-      data.company     || null,
+      data.companyId   || null,
     ]
   );
 
@@ -50,7 +50,7 @@ export const createSpeaker = async (data: CreateSpeakerDTO) => {
     lastName:    created.lastName,
     role:        'SPEAKER',
     phoneNumber: created.phoneNumber,
-    company:     created.company,
+    companyId:   created.companyId,
   });
 
   // ── Stuur planning.speaker.created naar exchange planning.topic (Frontend) ──
@@ -60,7 +60,7 @@ export const createSpeaker = async (data: CreateSpeakerDTO) => {
     lastName:    created.lastName,
     email:       created.email,
     phoneNumber: created.phoneNumber,
-    company:     created.company,
+    companyId:   created.companyId,
     isActive:    true,
   });
 
@@ -75,7 +75,7 @@ export const updateSpeaker = async (speakerId: string, data: UpdateSpeakerDTO) =
       "lastName"    = COALESCE($2, "lastName"),
       "email"       = COALESCE($3, "email"),
       "phoneNumber" = COALESCE($4, "phoneNumber"),
-      "company"     = COALESCE($5, "company")
+      "companyId"   = COALESCE($5, "companyId")
      WHERE "speakerId" = $6
      RETURNING *`,
     [
@@ -83,7 +83,7 @@ export const updateSpeaker = async (speakerId: string, data: UpdateSpeakerDTO) =
       data.lastName,
       data.email,
       data.phoneNumber,
-      data.company,
+      data.companyId,
       speakerId,
     ]
   );
@@ -99,7 +99,7 @@ export const updateSpeaker = async (speakerId: string, data: UpdateSpeakerDTO) =
       lastName:    updated.lastName,
       role:        'SPEAKER',
       phoneNumber: updated.phoneNumber,
-      company:     updated.company,
+      companyId:   updated.companyId,
     });
 
     // ── Stuur planning.speaker.updated naar exchange planning.topic (Frontend) ──
@@ -109,7 +109,7 @@ export const updateSpeaker = async (speakerId: string, data: UpdateSpeakerDTO) =
       lastName:    updated.lastName,
       email:       updated.email,
       phoneNumber: updated.phoneNumber,
-      company:     updated.company,
+      companyId:   updated.companyId,
       isActive:    updated.isActive,
     });
   }
