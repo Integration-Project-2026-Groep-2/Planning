@@ -17,7 +17,7 @@ const CreateSpeakerSchema = z.object({
   lastName:    z.string().min(1, 'Achternaam is verplicht'),
   email:       z.string().email('Ongeldig e-mailadres'),
   phoneNumber: z.string().optional(),
-  company:     z.string().optional(),
+  companyId:   z.string().optional(),
 });
 
 const UpdateSpeakerSchema = z.object({
@@ -25,7 +25,7 @@ const UpdateSpeakerSchema = z.object({
   lastName:    z.string().min(1).optional(),
   email:       z.string().email('Ongeldig e-mailadres').optional(),
   phoneNumber: z.string().optional(),
-  company:     z.string().optional(),
+  companyId:   z.string().optional(),
 });
 
 // ── GET /speakers ──
