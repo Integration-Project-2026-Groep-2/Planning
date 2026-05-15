@@ -22,7 +22,7 @@ export const getUserById = async (userId: string) => {
 export const createUser = async (data: CreateUserDTO) => {
   const result = await query(
     `INSERT INTO "User"
-     ("firstName", "lastName", "email", "role", "company")
+     ("firstName", "lastName", "email", "role", "companyId")
      VALUES ($1, $2, $3, $4, $5)
      RETURNING *`,
     [
@@ -30,7 +30,7 @@ export const createUser = async (data: CreateUserDTO) => {
       data.lastName,
       data.email,
       data.role,
-      data.company || null,
+      data.companyId || null,
     ]
   );
   const user = result.rows[0];
@@ -41,7 +41,7 @@ export const createUser = async (data: CreateUserDTO) => {
     firstName: user.firstName,
     lastName:  user.lastName,
     role:      user.role,
-    company:   user.company ?? undefined,
+    companyId: user.company ?? undefined,
   });
 
   return user;
@@ -54,7 +54,7 @@ export const updateUser = async (userId: string, data: UpdateUserDTO) => {
          "lastName"  = COALESCE($2, "lastName"),
          "email"     = COALESCE($3, "email"),
          "role"      = COALESCE($4, "role"),
-         "company"   = COALESCE($5, "company")
+         "companyId" = COALESCE($5, "companyId")
      WHERE "userId" = $6
      RETURNING *`,
     [
@@ -62,7 +62,7 @@ export const updateUser = async (userId: string, data: UpdateUserDTO) => {
       data.lastName,
       data.email,
       data.role,
-      data.company,
+      data.companyId,
       userId,
     ]
   );
@@ -77,7 +77,7 @@ export const updateUser = async (userId: string, data: UpdateUserDTO) => {
       firstName: updated.firstName,
       lastName:  updated.lastName,
       role:      updated.role,
-      company:   updated.company ?? undefined,
+      companyId: updated.company ?? undefined,
     });
   }
 
