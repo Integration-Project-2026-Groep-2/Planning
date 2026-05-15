@@ -13,7 +13,7 @@ const AddSpeakerSchema = z.object({
 router.get('/', async (req: Request, res: Response) => {
   try {
     const result = await query(
-      `SELECT ss.*, s."firstName", s."lastName", s."email", s."company"
+      `SELECT ss.*, s."firstName", s."lastName", s."email", s."companyId"
        FROM "SessionSpeaker" ss
        JOIN "Speaker" s ON ss."speakerId" = s."speakerId"
        WHERE ss."sessionId" = $1`,

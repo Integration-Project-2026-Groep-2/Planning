@@ -22,7 +22,7 @@ const CancelSchema = z.object({
 router.get("/", async (req: Request, res: Response) => {
     try {
         const result = await query(
-            `SELECT r.*, u."firstName", u."lastName", u."email", u."company"
+            `SELECT r.*, u."firstName", u."lastName", u."email", u."companyId"
        FROM "Registration" r
        JOIN "User" u ON r."userId" = u."userId"
        WHERE r."sessionId" = $1

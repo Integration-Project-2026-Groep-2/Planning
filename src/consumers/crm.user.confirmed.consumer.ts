@@ -78,7 +78,7 @@ export const startUserConfirmedConsumer = async () => {
         if (existingUser.rowCount && existingUser.rowCount > 0) {
           await query(
             `UPDATE "User"
-             SET "crmMasterId" = $1, "firstName" = $2, "lastName" = $3, "role" = $4, "isActive" = $5, "company" = $6
+             SET "crmMasterId" = $1, "firstName" = $2, "lastName" = $3, "role" = $4, "isActive" = $5, "companyId" = $6
              WHERE "userId" = $7`,
             [user.id, user.firstName, user.lastName, user.role, user.isActive, user.companyId || null, existingUser.rows[0].userId]
           );
@@ -86,7 +86,7 @@ export const startUserConfirmedConsumer = async () => {
         } else {
           await query(
             `INSERT INTO "User"
-              ("crmMasterId", "firstName", "lastName", "email", "role", "isActive", "company")
+              ("crmMasterId", "firstName", "lastName", "email", "role", "isActive", "companyId")
              VALUES ($1, $2, $3, $4, $5, $6, $7)`,
             [user.id, user.firstName, user.lastName, user.email, user.role, user.isActive, user.companyId || null]
           );
