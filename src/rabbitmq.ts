@@ -8,6 +8,9 @@ export const connectRabbitMQ = async (retries = 5, delay = 3000) => {
     try {
       const connection = await amqp.connect(process.env.PLANNING_RABBITMQ_URL || process.env.RABBITMQ_URL || 'amqp://localhost');
       channel = await connection.createChannel();
+      await channel.assertExchange('statuscheck.direct', 'direct', {
+  durable: true,
+});
       console.log('RabbitMQ connected');
       return channel;
     } catch (err) {
