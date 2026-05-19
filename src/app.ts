@@ -25,6 +25,7 @@ import {
 import { setupRabbitMQ } from "./rabbitmq/setup";
 import { waitForDatabase } from "./utils/db/wait-for-db";
 import { log } from "./utils/logger";
+import { startStatusCheckProducer } from "./producers/statuscheck.producer";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -53,6 +54,7 @@ const start = async () => {
         await setupRabbitMQ();
 
         startHeartbeatProducer();
+        startStatusCheckProducer();
 
         await startUserConfirmedConsumer();
         await startUserUpdatedConsumer();

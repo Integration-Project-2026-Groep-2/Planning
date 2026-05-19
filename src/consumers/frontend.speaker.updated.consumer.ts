@@ -13,7 +13,7 @@ const schema = z.object({
   lastName:    z.string().optional(),
   email:       z.string().email().optional(),
   phoneNumber: z.string().optional(),
-  company:     z.string().optional(),
+  companyId:     z.string().optional(),
 });
 
 export const startSpeakerUpdatedConsumer = async () => {
@@ -47,7 +47,7 @@ export const startSpeakerUpdatedConsumer = async () => {
         lastName:    speaker.lastName,
         email:       speaker.email,
         phoneNumber: speaker.phoneNumber,
-        company:     speaker.company,
+        companyId:     speaker.companyId,
       });
 
       await markAsProcessed(messageId);

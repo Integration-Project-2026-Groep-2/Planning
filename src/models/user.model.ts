@@ -5,7 +5,7 @@ export interface CreateUserDTO {
   lastName: string;
   email: string;
   role: UserRole;
-  company?: string;
+  companyId?: string;
 }
 
 export interface UpdateUserDTO {
@@ -13,5 +13,5 @@ export interface UpdateUserDTO {
   lastName?:  string;
   email?:     string;
   role?:      UserRole;
-  company?:   string;
+  companyId?:   string;
 }

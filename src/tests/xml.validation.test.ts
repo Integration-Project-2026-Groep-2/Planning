@@ -1,8 +1,8 @@
-import { validateXml } from '../utils/xml.validator';
+import { validateXml } from "../utils/xml.validator";
 
-describe('XML XSD validation', () => {
-  it('session.xsd - SessionCreated', async () => {
-    const xml = `
+describe("XML XSD validation", () => {
+    it("session.xsd - SessionCreated", async () => {
+        const xml = `
       <SessionCreated>
         <sessionId>123e4567-e89b-12d3-a456-426614174000</sessionId>
         <title>Test Session</title>
@@ -16,11 +16,11 @@ describe('XML XSD validation', () => {
       </SessionCreated>
     `;
 
-    await expect(validateXml(xml, 'SessionCreated')).resolves.toBe(true);
-  });
+        await expect(validateXml(xml, "SessionCreated")).resolves.toBe(true);
+    });
 
-  it('session.xsd - SessionRescheduled', async () => {
-    const xml = `
+    it("session.xsd - SessionRescheduled", async () => {
+        const xml = `
       <SessionRescheduled>
         <sessionId>123e4567-e89b-12d3-a456-426614174000</sessionId>
         <sessionName>Test Session</sessionName>
@@ -35,11 +35,13 @@ describe('XML XSD validation', () => {
       </SessionRescheduled>
     `;
 
-    await expect(validateXml(xml, 'SessionRescheduled')).resolves.toBe(true);
-  });
+        await expect(validateXml(xml, "SessionRescheduled")).resolves.toBe(
+            true,
+        );
+    });
 
-  it('location.xsd - PlanningLocationCreated', async () => {
-    const xml = `
+    it("location.xsd - PlanningLocationCreated", async () => {
+        const xml = `
       <LocationCreated>
         <locationId>123e4567-e89b-12d3-a456-426614174000</locationId>
         <roomName>Zaal A</roomName>
@@ -48,11 +50,11 @@ describe('XML XSD validation', () => {
       </LocationCreated>
     `;
 
-    await expect(validateXml(xml, 'LocationCreated')).resolves.toBe(true);
-  });
+        await expect(validateXml(xml, "LocationCreated")).resolves.toBe(true);
+    });
 
-  it('speaker.xsd - PlanningSpeakerCreated', async () => {
-    const xml = `
+    it("speaker.xsd - PlanningSpeakerCreated", async () => {
+        const xml = `
       <SpeakerCreated>
         <speakerId>123e4567-e89b-12d3-a456-426614174000</speakerId>
         <firstName>Jan</firstName>
@@ -62,11 +64,11 @@ describe('XML XSD validation', () => {
       </SpeakerCreated>
     `;
 
-    await expect(validateXml(xml, 'SpeakerCreated')).resolves.toBe(true);
-  });
+        await expect(validateXml(xml, "SpeakerCreated")).resolves.toBe(true);
+    });
 
-  it('frontend.xsd - FrontendSessionCreated', async () => {
-    const xml = `
+    it("frontend.xsd - FrontendSessionCreated", async () => {
+        const xml = `
       <SessionCreated>
         <sessionId>123e4567-e89b-12d3-a456-426614174000</sessionId>
         <title>Frontend Test Session</title>
@@ -77,11 +79,11 @@ describe('XML XSD validation', () => {
       </SessionCreated>
     `;
 
-    await expect(validateXml(xml, 'SessionCreated')).resolves.toBe(true);
-  });
+        await expect(validateXml(xml, "SessionCreated")).resolves.toBe(true);
+    });
 
-  it('crm.xsd - UserConfirmed', async () => {
-    const xml = `
+    it("crm.xsd - UserConfirmed", async () => {
+        const xml = `
       <UserConfirmed>
         <id>123e4567-e89b-42d3-a456-426614174000</id>
         <email>user@test.com</email>
@@ -94,17 +96,34 @@ describe('XML XSD validation', () => {
       </UserConfirmed>
     `;
 
-    await expect(validateXml(xml, 'UserConfirmed')).resolves.toBe(true);
-  });
+        await expect(validateXml(xml, "UserConfirmed")).resolves.toBe(true);
+    });
 
-  it('controlroom.xsd - Heartbeat', async () => {
-    const xml = `
+    it("controlroom.xsd - Heartbeat", async () => {
+        const xml = `
       <Heartbeat>
         <serviceId>planning</serviceId>
         <timestamp>2026-05-05T18:00:00Z</timestamp>
       </Heartbeat>
     `;
 
-    await expect(validateXml(xml, 'Heartbeat')).resolves.toBe(true);
-  });
+        await expect(validateXml(xml, "Heartbeat")).resolves.toBe(true);
+    });
+
+    it("session.xsd - RegistrationCreated", async () => {
+        const xml = `
+      <RegistrationCreated>
+        <registrationId>123e4567-e89b-12d3-a456-426614174000</registrationId>
+        <sessionId>223e4567-e89b-12d3-a456-426614174000</sessionId>
+        <userId>323e4567-e89b-12d3-a456-426614174000</userId>
+        <crmMasterId>423e4567-e89b-12d3-a456-426614174000</crmMasterId>
+        <isActive>true</isActive>
+        <timestamp>2026-05-05T18:00:00Z</timestamp>
+      </RegistrationCreated>
+    `;
+
+        await expect(validateXml(xml, "RegistrationCreated")).resolves.toBe(
+            true,
+        );
+    });
 });

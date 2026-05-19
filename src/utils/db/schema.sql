@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS "Speaker" (
     "lastName"    VARCHAR(100) NOT NULL,
     "email"       VARCHAR(255) NOT NULL,
     "phoneNumber" VARCHAR(20),
-    "company"     VARCHAR(255),
+    "companyId"   UUID,
     "isActive"    BOOLEAN      NOT NULL DEFAULT true
 );
 
@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS "Session" (
 CREATE TABLE IF NOT EXISTS "SessionSpeaker" (
     "sessionSpeakerId" UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
     "sessionId"        UUID        NOT NULL REFERENCES "Session"("sessionId") ON DELETE CASCADE,
-    "speakerId"        UUID        NOT NULL REFERENCES "Speaker"("speakerId") ON DELETE CASCADE,
+    "speakerId"        UUID        NOT NULL,
     "role"             VARCHAR(100),
     "confirmed"        BOOLEAN     NOT NULL DEFAULT false
 );
@@ -50,8 +50,8 @@ CREATE TABLE IF NOT EXISTS "Participant" (
 CREATE TABLE IF NOT EXISTS "Registration" (
     "registrationId"   UUID      PRIMARY KEY DEFAULT gen_random_uuid(),
     "sessionId"        UUID      NOT NULL REFERENCES "Session"("sessionId") ON DELETE CASCADE,
-    "participantId"    UUID      NOT NULL REFERENCES "Participant"("participantId"),
-    "crmMasterId"      UUID,
+    "userId"           UUID      NOT NULL REFERENCES "User"("crmMasterId"),
+    "isActive"         BOOLEAN   NOT NULL DEFAULT true,
     "registrationTime" TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
@@ -82,7 +82,7 @@ CREATE TABLE IF NOT EXISTS "User" (
     "lastName"  VARCHAR(100) NOT NULL,
     "email"     VARCHAR(255) NOT NULL UNIQUE,
     "role"      VARCHAR(50)  NOT NULL,
-    "company"   VARCHAR(255),
+    "companyId"   VARCHAR(255),
     "isActive"  BOOLEAN NOT NULL DEFAULT true
 );
 DO $$
@@ -110,3 +110,15 @@ BEGIN
 END $$;
 ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "isActive" BOOLEAN NOT NULL DEFAULT true;
 ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "crmMasterId" UUID;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'user_crmmasterid_unique'
+    ) THEN
+        ALTER TABLE "User"
+            ADD CONSTRAINT user_crmmasterid_unique UNIQUE ("crmMasterId");
+    END IF;
+END $$;

@@ -9,7 +9,7 @@ type SpeakerCreatedPayload = {
   lastName:     string;
   email:        string;
   phoneNumber?: string;
-  company?:     string;
+  companyId?:   string;
   isActive:     boolean;
   timestamp?:   string;
 };
@@ -28,7 +28,7 @@ export const sendSpeakerCreated = async (payload: SpeakerCreatedPayload) => {
       lastName:    payload.lastName,
       email:       payload.email,
       phoneNumber: payload.phoneNumber,
-      company:     payload.company,
+      companyId:   payload.companyId,
       isActive:    payload.isActive,
       timestamp:   payload.timestamp ?? new Date().toISOString(),
     });

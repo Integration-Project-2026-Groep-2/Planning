@@ -10,7 +10,7 @@ type PlanningUserCreatedPayload = {
   lastName:     string;
   role:        string;
   phoneNumber?: string;
-  company?:     string;
+  companyId?:     string;
 };
 
 export const sendPlanningUserCreated = async (payload: PlanningUserCreatedPayload) => {
@@ -29,7 +29,7 @@ export const sendPlanningUserCreated = async (payload: PlanningUserCreatedPayloa
       role:        payload.role,
       isActive:    'true',
       phoneNumber: payload.phoneNumber,
-      company:     payload.company,
+      companyId:   payload.companyId,
     });
 
     const isValid = validateXml(xml, 'PlanningUserCreated');

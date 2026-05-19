@@ -15,12 +15,12 @@ const UpdateUserSchema = z.object({
   lastName:  z.string().min(1).optional(),
   email:     z.string().email('Ongeldig e-mailadres').optional(),
   role:      z.enum(['EVENT_MANAGER', 'VISITOR']).optional(),
-  company:   z.string().optional(),
+  companyId: z.string().optional(),
 });
 
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { firstName, lastName, email, role, company } = req.body;
+    const { firstName, lastName, email, role, companyId } = req.body;
     if (!firstName || !lastName || !email || !role) {
       res.status(400).json({ error: 'Missing required fields' });
       return;
@@ -29,7 +29,7 @@ router.post('/', async (req: Request, res: Response) => {
       res.status(400).json({ error: 'Invalid role' });
       return;
     }
-    const user = await createUser({ firstName, lastName, email, role, company });
+    const user = await createUser({ firstName, lastName, email, role, companyId });
     res.status(201).json(user);
   } catch (err: any) {
     if (err.code === '23505') {

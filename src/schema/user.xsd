@@ -17,7 +17,7 @@
         <xs:element name="role"        type="xs:string"/>
         <xs:element name="isActive"    type="xs:boolean"/>
         <xs:element name="phoneNumber" type="xs:string" minOccurs="0"/>
-        <xs:element name="company"     type="xs:string" minOccurs="0"/>
+        <xs:element name="companyId"     type="xs:string" minOccurs="0"/>
       </xs:sequence>
     </xs:complexType>
   </xs:element>
@@ -37,7 +37,7 @@
         <xs:element name="role"        type="xs:string"/>
         <xs:element name="isActive"    type="xs:boolean"/>
         <xs:element name="phoneNumber" type="xs:string" minOccurs="0"/>
-        <xs:element name="company"     type="xs:string" minOccurs="0"/>
+        <xs:element name="companyId"     type="xs:string" minOccurs="0"/>
       </xs:sequence>
     </xs:complexType>
   </xs:element>
