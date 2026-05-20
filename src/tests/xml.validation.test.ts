@@ -1,23 +1,24 @@
 import { validateXml } from "../utils/xml.validator";
 
 describe("XML XSD validation", () => {
-    it("session.xsd - SessionCreated", async () => {
-        const xml = `
-      <SessionCreated>
-        <sessionId>123e4567-e89b-12d3-a456-426614174000</sessionId>
-        <title>Test Session</title>
-        <date>2026-05-20</date>
-        <startTime>10:00:00</startTime>
-        <endTime>12:00:00</endTime>
-        <location>Room A</location>
-        <status>active</status>
-        <capacity>50</capacity>
-        <timestamp>2026-05-05T18:00:00Z</timestamp>
-      </SessionCreated>
-    `;
-
-        await expect(validateXml(xml, "SessionCreated")).resolves.toBe(true);
-    });
+it("session.xsd - SessionCreated", async () => {
+    const xml = `
+<SessionCreated>
+<sessionId>123e4567-e89b-12d3-a456-426614174000</sessionId>
+<title>Test Session</title>
+<date>2026-05-20</date>
+<startTime>10:00:00</startTime>
+<endTime>12:00:00</endTime>
+<location>Room A</location>
+<locationId>123e4567-e89b-12d3-a456-426614174001</locationId>
+<status>active</status>
+<capacity>50</capacity>
+<icsData>base64test</icsData>
+<timestamp>2026-05-05T18:00:00Z</timestamp>
+</SessionCreated>
+`;
+    await expect(validateXml(xml, "SessionCreated")).resolves.toBe(true);
+});
 
     it("session.xsd - SessionRescheduled", async () => {
         const xml = `
@@ -110,7 +111,7 @@ describe("XML XSD validation", () => {
         await expect(validateXml(xml, "Heartbeat")).resolves.toBe(true);
     });
 
- it("session.xsd - RegistrationCreated", async () => {
+it("session.xsd - RegistrationCreated", async () => {
     const xml = `
 <RegistrationCreated>
 <sessionId>223e4567-e89b-12d3-a456-426614174000</sessionId>
