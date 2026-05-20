@@ -76,6 +76,45 @@ describe('Speaker API', () => {
     expect(res.status).toBe(404);
   });
 
+  it('POST /api/speakers maakt een spreker aan', async () => {
+    mockQuery.mockResolvedValue({ rows: [mockSpeaker] });
+
+    const res = await request(app)
+      .post('/api/speakers')
+      .send({
+        firstName: 'Jan',
+        lastName: 'Jansen',
+        email: 'jan@example.com',
+        phoneNumber: '+31612345678',
+        company: 'TechCorp',
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.firstName).toBe('Jan');
+    expect(res.body.email).toBe('jan@example.com');
+  });
+
+  it('POST /api/speakers geeft 400 bij ontbrekende verplichte velden', async () => {
+    const res = await request(app)
+      .post('/api/speakers')
+      .send({ firstName: 'Jan' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBeDefined();
+  });
+
+  it('POST /api/speakers geeft 400 bij ongeldig emailadres', async () => {
+    const res = await request(app)
+      .post('/api/speakers')
+      .send({
+        firstName: 'Jan',
+        lastName: 'Jansen',
+        email: 'fout-email',
+      });
+
+    expect(res.status).toBe(400);
+  });
+
   it('PUT /api/speakers/:id wijzigt een spreker', async () => {
     mockQuery.mockResolvedValueOnce({
       rows: [{ ...mockSpeaker, firstName: 'Johannes' }],
