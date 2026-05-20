@@ -31,9 +31,6 @@ jest.mock("../consumers", () => ({
     startUserConfirmedConsumer: jest.fn().mockResolvedValue(undefined),
     startUserUpdatedConsumer: jest.fn().mockResolvedValue(undefined),
     startUserDeactivatedConsumer: jest.fn().mockResolvedValue(undefined),
-    startCompanyConfirmedConsumer: jest.fn().mockResolvedValue(undefined),
-    startCompanyUpdatedConsumer: jest.fn().mockResolvedValue(undefined),
-    startCompanyDeactivatedConsumer: jest.fn().mockResolvedValue(undefined),
 }));
 
 jest.mock("../utils/ics.generator", () => ({
