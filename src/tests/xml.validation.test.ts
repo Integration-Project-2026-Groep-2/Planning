@@ -110,20 +110,13 @@ describe("XML XSD validation", () => {
         await expect(validateXml(xml, "Heartbeat")).resolves.toBe(true);
     });
 
-    it("session.xsd - RegistrationCreated", async () => {
-        const xml = `
-      <RegistrationCreated>
-        <registrationId>123e4567-e89b-12d3-a456-426614174000</registrationId>
-        <sessionId>223e4567-e89b-12d3-a456-426614174000</sessionId>
-        <userId>323e4567-e89b-12d3-a456-426614174000</userId>
-        <crmMasterId>423e4567-e89b-12d3-a456-426614174000</crmMasterId>
-        <isActive>true</isActive>
-        <timestamp>2026-05-05T18:00:00Z</timestamp>
-      </RegistrationCreated>
-    `;
-
-        await expect(validateXml(xml, "RegistrationCreated")).resolves.toBe(
-            true,
-        );
-    });
+ it("session.xsd - RegistrationCreated", async () => {
+    const xml = `
+<RegistrationCreated>
+<sessionId>223e4567-e89b-12d3-a456-426614174000</sessionId>
+<crmMasterId>423e4567-e89b-12d3-a456-426614174000</crmMasterId>
+</RegistrationCreated>
+`;
+    await expect(validateXml(xml, "RegistrationCreated")).resolves.toBe(true);
+});
 });
