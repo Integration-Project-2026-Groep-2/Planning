@@ -3,6 +3,7 @@
 ## Sessions
 
 ### GET /api/sessions
+
 Geeft een lijst van alle sessies terug, gesorteerd op datum en starttijd.
 
 **Request**
@@ -30,7 +31,8 @@ Geeft een lijst van alle sessies terug, gesorteerd op datum en starttijd.
 ---
 
 ### GET /api/sessions/:id
-Geeft één sessie terug op basis van het sessionId.
+
+Geeft één sessie terug op basis van het `sessionId`.
 
 **Request**
 - Geen body vereist
@@ -60,9 +62,17 @@ Geeft één sessie terug op basis van het sessionId.
 ---
 
 ### POST /api/sessions
-Maakt een nieuwe sessie aan. Valideert de invoer met Zod. Genereert automatisch een ICS kalenderbestand en stuurt dit mee naar RabbitMQ.
 
-**Verplichte velden:** `title`, `date`, `startTime`, `endTime`, `capacity`
+Maakt een nieuwe sessie aan. De invoer wordt gevalideerd met Zod. Na het aanmaken wordt automatisch een RabbitMQ-event gepubliceerd naar `planning.topic`.
+
+Daarnaast wordt er een ICS-kalenderbestand gegenereerd en als base64-string meegestuurd in het veld `icsData`.
+
+**Verplichte velden**
+- `title`
+- `date`
+- `startTime`
+- `endTime`
+- `capacity`
 
 **Request body**
 ```json
@@ -73,7 +83,7 @@ Maakt een nieuwe sessie aan. Valideert de invoer met Zod. Genereert automatisch 
   "startTime": "09:00",
   "endTime": "10:30",
   "capacity": 30,
-  "locationId": "optioneel-uuid-van-locatie",
+  "locationId": "550e8400-e29b-41d4-a716-446655440000",
   "status": "concept"
 }
 ```
@@ -85,6 +95,7 @@ Maakt een nieuwe sessie aan. Valideert de invoer met Zod. Genereert automatisch 
 - `endTime` — verplicht, moet na `startTime` liggen
 - `capacity` — verplicht, moet groter zijn dan 0
 - `locationId` — optioneel, moet een geldig UUID zijn
+- `status` — optioneel, standaard `concept`
 
 **Response 201**
 ```json
@@ -96,25 +107,45 @@ Maakt een nieuwe sessie aan. Valideert de invoer met Zod. Genereert automatisch 
 }
 ```
 
-**Response 400** — validatiefout
+**Response 400 — validatiefout**
 ```json
-{ "error": { "fieldErrors": { "endTime": ["Eindtijd moet na starttijd liggen"] } } }
+{
+  "error": {
+    "fieldErrors": {
+      "endTime": ["Eindtijd moet na starttijd liggen"]
+    }
+  }
+}
 ```
 
-**Response 409** — locatieconflict
+**Response 409 — locatieconflict**
 ```json
 { "error": "Locatie is al bezet op dit tijdslot" }
 ```
 
 **RabbitMQ Event**
 - Exchange: `planning.topic`
-- Routing Key: `planning.session.created`
-- XML Payload bevat een `icsData` veld — een base64-geëncodeerd `.ics` kalenderbestand dat door andere services gebruikt kan worden om de sessie toe te voegen aan een kalender zoals Outlook.
+- Routing key: `planning.session.created`
+- Root element: `SessionCreated`
+
+**XML payload bevat**
+- `sessionId`
+- `title`
+- `date`
+- `startTime`
+- `endTime`
+- `location`
+- `locationId`
+- `status`
+- `capacity`
+- `icsData`
+- `timestamp`
 
 ---
 
 ### PUT /api/sessions/:id
-Wijzigt een bestaande sessie. Alle velden zijn optioneel.
+
+Wijzigt een bestaande sessie. Alle velden zijn optioneel. Bij een succesvolle wijziging wordt een RabbitMQ-event gepubliceerd.
 
 **Request body**
 ```json
@@ -138,14 +169,20 @@ Wijzigt een bestaande sessie. Alle velden zijn optioneel.
 { "error": "Sessie niet gevonden" }
 ```
 
-**Response 409** — locatieconflict
+**Response 409 — locatieconflict**
 ```json
 { "error": "Locatie is al bezet op dit tijdslot" }
 ```
 
+**RabbitMQ Event**
+- Exchange: `planning.topic`
+- Routing key: `planning.session.updated`
+- Root element: `SessionUpdated`
+
 ---
 
 ### DELETE /api/sessions/:id
+
 Verwijdert een sessie permanent.
 
 **Request**
@@ -153,7 +190,12 @@ Verwijdert een sessie permanent.
 
 **Response 200**
 ```json
-{ "message": "Sessie verwijderd", "session": { "sessionId": "..." } }
+{
+  "message": "Sessie verwijderd",
+  "session": {
+    "sessionId": "4e61b896-8ad9-4235-bbba-8ae31d91ba56"
+  }
+}
 ```
 
 **Response 404**
@@ -164,14 +206,21 @@ Verwijdert een sessie permanent.
 ---
 
 ### PATCH /api/sessions/:id/cancel
-Annuleert een sessie — zet de status op `geannuleerd`.
+
+Annuleert een sessie en zet de status op `cancelled`.
 
 **Request**
 - Geen body vereist
 
 **Response 200**
 ```json
-{ "message": "Sessie geannuleerd", "session": { "sessionId": "...", "status": "geannuleerd" } }
+{
+  "message": "Sessie geannuleerd",
+  "session": {
+    "sessionId": "4e61b896-8ad9-4235-bbba-8ae31d91ba56",
+    "status": "cancelled"
+  }
+}
 ```
 
 **Response 404**
@@ -179,10 +228,16 @@ Annuleert een sessie — zet de status op `geannuleerd`.
 { "error": "Sessie niet gevonden" }
 ```
 
+**RabbitMQ Event**
+- Exchange: `planning.topic`
+- Routing key: `planning.session.cancelled`
+- Root element: `SessionCancelled`
+
 ---
 
 ### PATCH /api/sessions/:id/reschedule
-Verzet een sessie naar een nieuw tijdstip. Slaat de wijziging op in de SessionChangeLog.
+
+Verzet een sessie naar een nieuw tijdstip. De wijziging wordt opgeslagen in `SessionChangeLog`.
 
 **Request body**
 ```json
@@ -195,13 +250,20 @@ Verzet een sessie naar een nieuw tijdstip. Slaat de wijziging op in de SessionCh
 ```
 
 **Validatieregels**
-- Alle velden zijn verplicht
-- `endTime` moet na `startTime` liggen
-- `reason` mag niet leeg zijn
+- `date` — verplicht
+- `startTime` — verplicht
+- `endTime` — verplicht, moet na `startTime` liggen
+- `reason` — verplicht, mag niet leeg zijn
 
 **Response 200**
 ```json
-{ "message": "Sessie verzet", "session": { "sessionId": "...", "date": "2026-05-20" } }
+{
+  "message": "Sessie verzet",
+  "session": {
+    "sessionId": "4e61b896-8ad9-4235-bbba-8ae31d91ba56",
+    "date": "2026-05-20"
+  }
+}
 ```
 
 **Response 404**
@@ -209,15 +271,21 @@ Verzet een sessie naar een nieuw tijdstip. Slaat de wijziging op in de SessionCh
 { "error": "Sessie niet gevonden" }
 ```
 
-**Response 409** — locatieconflict
+**Response 409 — locatieconflict**
 ```json
 { "error": "Locatie is al bezet op dit tijdslot" }
 ```
 
+**RabbitMQ Event**
+- Exchange: `planning.topic`
+- Routing key: `planning.session.rescheduled`
+- Root element: `SessionRescheduled`
+
 ---
 
 ### GET /api/sessions/:id/logs
-Geeft alle wijzigingen van een sessie terug. Gesorteerd op datum (nieuwste eerst).
+
+Geeft alle wijzigingen van een sessie terug, gesorteerd op datum, nieuwste eerst.
 
 **Request**
 - Geen body vereist
@@ -235,42 +303,35 @@ Geeft alle wijzigingen van een sessie terug. Gesorteerd op datum (nieuwste eerst
     "reason": "Sessie gewijzigd via PUT",
     "changedAt": "2026-05-15T09:15:30.123Z",
     "changedBy": null
-  },
-  {
-    "logId": "b2g4f9c3-8d0e-5b32-c4f6-g9d3e2b5c8f0",
-    "sessionId": "4e61b896-8ad9-4235-bbba-8ae31d91ba56",
-    "oldStartTime": "2026-05-15 09:00:00",
-    "newStartTime": null,
-    "oldEndTime": "2026-05-15 10:30:00",
-    "newEndTime": null,
-    "reason": "Sessie geannuleerd",
-    "changedAt": "2026-05-15T10:45:00.000Z",
-    "changedBy": null
   }
 ]
 ```
 
-**Response 404** — sessie niet gevonden
+**Response 404**
 ```json
 { "error": "Sessie niet gevonden" }
 ```
 
-**Opmerking:** Elke keer dat een sessie wordt gewijzigd (`PUT`), geannuleerd (`PATCH /cancel`) of verzet (`PATCH /reschedule`), wordt automatisch een log entry aangemaakt. Deze logs dienen als audittrail voor alle wijzigingen aan sessies.
+**Opmerking**
+
+Elke keer dat een sessie wordt gewijzigd, geannuleerd of verzet, wordt automatisch een log entry aangemaakt. Deze logs dienen als audittrail.
 
 ---
 
 ## Registraties
 
 ### POST /api/sessions/:id/register
-Schrijft een deelnemer in voor een sessie. Controleert capaciteit automatisch.
 
-**Verplichte velden:** `participantId`
+Schrijft een deelnemer in voor een sessie. De capaciteit wordt automatisch gecontroleerd.
+
+**Verplichte velden**
+- `participantId`
 
 **Request body**
 ```json
 {
-  "participantId": "uuid-van-deelnemer",
-  "crmMasterId": "uuid-van-crm-master (optioneel)"
+  "participantId": "850e8400-e29b-41d4-a716-446655440000",
+  "crmMasterId": "950e8400-e29b-41d4-a716-446655440000"
 }
 ```
 
@@ -281,49 +342,57 @@ Schrijft een deelnemer in voor een sessie. Controleert capaciteit automatisch.
 **Response 201**
 ```json
 {
-  "registrationId": "uuid",
-  "sessionId": "uuid",
-  "participantId": "uuid",
-  "crmMasterId": null,
+  "registrationId": "a50e8400-e29b-41d4-a716-446655440000",
+  "sessionId": "4e61b896-8ad9-4235-bbba-8ae31d91ba56",
+  "participantId": "850e8400-e29b-41d4-a716-446655440000",
+  "crmMasterId": "950e8400-e29b-41d4-a716-446655440000",
   "registrationTime": "2026-05-15T09:00:00.000Z"
 }
 ```
 
-**Response 400** — sessie geannuleerd
+**Response 400 — sessie geannuleerd**
 ```json
 { "error": "Sessie is geannuleerd" }
 ```
 
-**Response 404** — sessie niet gevonden
+**Response 404 — sessie niet gevonden**
 ```json
 { "error": "Sessie niet gevonden" }
 ```
 
-**Response 409** — al ingeschreven
+**Response 409 — al ingeschreven**
 ```json
 { "error": "Deelnemer is al ingeschreven voor deze sessie" }
 ```
 
-**Response 409** — sessie volzet
+**Response 409 — sessie volzet**
 ```json
 { "error": "Sessie is volzet" }
 ```
 
 **RabbitMQ events**
-- `planning.participant.registered` — altijd verstuurd bij succesvolle inschrijving
-- `planning.session.full` — verstuurd wanneer sessie volzet is, status wordt automatisch `volzet`
+- Exchange: `planning.topic`
+- Routing key: `planning.participant.registered`
+- Root element: `ParticipantRegistered`
+
+Wanneer de sessie volzet raakt:
+- Exchange: `planning.topic`
+- Routing key: `planning.session.full`
+- Root element: `SessionFull`
 
 ---
 
 ### DELETE /api/sessions/:id/register
-Annuleert de inschrijving van een deelnemer. Als de sessie volzet was, wordt de status teruggezet op `actief`.
 
-**Verplichte velden:** `participantId`
+Annuleert de inschrijving van een deelnemer. Als de sessie de status `full` had, kan de status opnieuw aangepast worden.
+
+**Verplichte velden**
+- `participantId`
 
 **Request body**
 ```json
 {
-  "participantId": "uuid-van-deelnemer"
+  "participantId": "850e8400-e29b-41d4-a716-446655440000"
 }
 ```
 
@@ -332,9 +401,9 @@ Annuleert de inschrijving van een deelnemer. Als de sessie volzet was, wordt de 
 {
   "message": "Inschrijving geannuleerd",
   "registration": {
-    "registrationId": "uuid",
-    "sessionId": "uuid",
-    "participantId": "uuid"
+    "registrationId": "a50e8400-e29b-41d4-a716-446655440000",
+    "sessionId": "4e61b896-8ad9-4235-bbba-8ae31d91ba56",
+    "participantId": "850e8400-e29b-41d4-a716-446655440000"
   }
 }
 ```
@@ -349,7 +418,8 @@ Annuleert de inschrijving van een deelnemer. Als de sessie volzet was, wordt de 
 ## Locations
 
 ### GET /api/locations
-Geeft alle locaties terug, gesorteerd op roomName.
+
+Geeft alle locaties terug, gesorteerd op `roomName`.
 
 **Request**
 - Geen body vereist
@@ -362,14 +432,14 @@ Geeft alle locaties terug, gesorteerd op roomName.
     "roomName": "Zaal A",
     "address": "Straat 123",
     "capacity": 50,
-    "status": "beschikbaar"
+    "status": "active"
   },
   {
     "locationId": "550e8400-e29b-41d4-a716-446655440001",
     "roomName": "Zaal B",
     "address": "Straat 124",
     "capacity": 75,
-    "status": "gereserveerd"
+    "status": "inactive"
   }
 ]
 ```
@@ -377,7 +447,8 @@ Geeft alle locaties terug, gesorteerd op roomName.
 ---
 
 ### GET /api/locations/:id
-Geeft één locatie terug op basis van het locationId.
+
+Geeft één locatie terug op basis van het `locationId`.
 
 **Request**
 - Geen body vereist
@@ -389,7 +460,7 @@ Geeft één locatie terug op basis van het locationId.
   "roomName": "Zaal A",
   "address": "Straat 123",
   "capacity": 50,
-  "status": "beschikbaar"
+  "status": "active"
 }
 ```
 
@@ -401,25 +472,28 @@ Geeft één locatie terug op basis van het locationId.
 ---
 
 ### POST /api/locations
-Maakt een nieuwe locatie aan.
 
-**Verplichte velden:** `roomName`, `capacity`
+Maakt een nieuwe locatie aan. Na creatie wordt een event gepubliceerd naar `planning.topic`.
 
-**Request Body**
+**Verplichte velden**
+- `roomName`
+- `capacity`
+
+**Request body**
 ```json
 {
   "roomName": "Zaal A",
   "address": "Straat 123",
   "capacity": 50,
-  "status": "beschikbaar"
+  "status": "active"
 }
 ```
 
 **Validatie**
-- `roomName`: verplicht, minimaal 1 karakter
-- `address`: optioneel
-- `capacity`: verplicht, groter dan 0
-- `status`: optioneel, moet een van: `beschikbaar`, `gereserveerd`, `niet beschikbaar`
+- `roomName` — verplicht, minimaal 1 karakter
+- `address` — optioneel
+- `capacity` — verplicht, groter dan 0
+- `status` — optioneel
 
 **Response 201**
 ```json
@@ -428,26 +502,38 @@ Maakt een nieuwe locatie aan.
   "roomName": "Zaal A",
   "address": "Straat 123",
   "capacity": 50,
-  "status": "beschikbaar"
+  "status": "active"
 }
 ```
 
-**Response 400** - Validatiefout
+**Response 400 — validatiefout**
 ```json
-{ "error": { "fieldErrors": { "capacity": ["Capaciteit moet groter zijn dan 0"] } } }
+{
+  "error": {
+    "fieldErrors": {
+      "capacity": ["Capaciteit moet groter zijn dan 0"]
+    }
+  }
+}
 ```
+
+**RabbitMQ Event**
+- Exchange: `planning.topic`
+- Routing key: `planning.location.created`
+- Root element: `LocationCreated`
 
 ---
 
 ### PUT /api/locations/:id
+
 Wijzigt een bestaande locatie. Alle velden zijn optioneel.
 
-**Request Body**
+**Request body**
 ```json
 {
   "roomName": "Zaal B",
   "capacity": 75,
-  "status": "gereserveerd"
+  "status": "inactive"
 }
 ```
 
@@ -458,7 +544,18 @@ Wijzigt een bestaande locatie. Alle velden zijn optioneel.
   "roomName": "Zaal B",
   "address": "Straat 123",
   "capacity": 75,
-  "status": "gereserveerd"
+  "status": "inactive"
+}
+```
+
+**Response 400 — validatiefout**
+```json
+{
+  "error": {
+    "fieldErrors": {
+      "capacity": ["Capaciteit moet groter zijn dan 0"]
+    }
+  }
 }
 ```
 
@@ -467,11 +564,15 @@ Wijzigt een bestaande locatie. Alle velden zijn optioneel.
 { "error": "Locatie niet gevonden" }
 ```
 
-**Response 400** - Validatiefout
+**RabbitMQ Event**
+- Exchange: `planning.topic`
+- Routing key: `planning.location.updated`
+- Root element: `LocationUpdated`
 
 ---
 
 ### DELETE /api/locations/:id
+
 Verwijdert een locatie permanent.
 
 **Request**
@@ -486,7 +587,7 @@ Verwijdert een locatie permanent.
     "roomName": "Zaal A",
     "address": "Straat 123",
     "capacity": 50,
-    "status": "beschikbaar"
+    "status": "active"
   }
 }
 ```
@@ -496,11 +597,17 @@ Verwijdert een locatie permanent.
 { "error": "Locatie niet gevonden" }
 ```
 
+**RabbitMQ Event**
+- Exchange: `planning.topic`
+- Routing key: `planning.location.deleted`
+- Root element: `LocationDeleted`
+
 ---
 
 ## Speakers
 
 ### GET /api/speakers
+
 Geeft alle sprekers terug, gesorteerd op achternaam en voornaam.
 
 **Request**
@@ -511,7 +618,7 @@ Geeft alle sprekers terug, gesorteerd op achternaam en voornaam.
 [
   {
     "speakerId": "650e8400-e29b-41d4-a716-446655440000",
-    "crmMasterId": "CRM123",
+    "crmMasterId": "950e8400-e29b-41d4-a716-446655440000",
     "firstName": "Jan",
     "lastName": "Jansen",
     "email": "jan@example.com",
@@ -525,7 +632,8 @@ Geeft alle sprekers terug, gesorteerd op achternaam en voornaam.
 ---
 
 ### GET /api/speakers/:id
-Geeft één spreker terug op basis van het speakerId.
+
+Geeft één spreker terug op basis van het `speakerId`.
 
 **Request**
 - Geen body vereist
@@ -534,7 +642,7 @@ Geeft één spreker terug op basis van het speakerId.
 ```json
 {
   "speakerId": "650e8400-e29b-41d4-a716-446655440000",
-  "crmMasterId": "CRM123",
+  "crmMasterId": "950e8400-e29b-41d4-a716-446655440000",
   "firstName": "Jan",
   "lastName": "Jansen",
   "email": "jan@example.com",
@@ -552,11 +660,15 @@ Geeft één spreker terug op basis van het speakerId.
 ---
 
 ### POST /api/speakers
-Maakt een nieuwe spreker aan met Zod validatie. Stuurt automatisch `planning.user.created` event naar RabbitMQ exchange `user.topic`.
 
-**Verplichte velden:** `firstName`, `lastName`, `email`
+Maakt een nieuwe spreker aan met Zod-validatie. Na creatie worden events gepubliceerd voor Frontend en CRM.
 
-**Request Body**
+**Verplichte velden**
+- `firstName`
+- `lastName`
+- `email`
+
+**Request body**
 ```json
 {
   "firstName": "Jan",
@@ -568,11 +680,11 @@ Maakt een nieuwe spreker aan met Zod validatie. Stuurt automatisch `planning.use
 ```
 
 **Validatie**
-- `firstName`: verplicht, minimaal 1 karakter
-- `lastName`: verplicht, minimaal 1 karakter
-- `email`: verplicht, moet een geldig e-mailadres zijn, moet uniek zijn
-- `phoneNumber`: optioneel
-- `company`: optioneel
+- `firstName` — verplicht, minimaal 1 karakter
+- `lastName` — verplicht, minimaal 1 karakter
+- `email` — verplicht, moet een geldig e-mailadres zijn en uniek zijn
+- `phoneNumber` — optioneel
+- `company` — optioneel
 
 **Response 201**
 ```json
@@ -588,39 +700,38 @@ Maakt een nieuwe spreker aan met Zod validatie. Stuurt automatisch `planning.use
 }
 ```
 
-**Response 400** - Validatiefout
+**Response 400 — validatiefout**
 ```json
-{ "error": { "fieldErrors": { "email": ["Ongeldig e-mailadres"] } } }
+{
+  "error": {
+    "fieldErrors": {
+      "email": ["Ongeldig e-mailadres"]
+    }
+  }
+}
 ```
 
-**Response 409** - Email duplicate
+**Response 409 — email duplicate**
 ```json
 { "error": "E-mailadres is al in gebruik" }
 ```
 
-**RabbitMQ Event**
+**RabbitMQ Events**
+- Exchange: `planning.topic`
+- Routing key: `planning.speaker.created`
+- Root element: `SpeakerCreated`
+
 - Exchange: `user.topic`
-- Routing Key: `planning.user.created`
-- XML Payload:
-```xml
-<PlanningUserCreated>
-  <id>650e8400-e29b-41d4-a716-446655440000</id>
-  <email>jan@example.com</email>
-  <firstName>Jan</firstName>
-  <lastName>Jansen</lastName>
-  <role>SPEAKER</role>
-  <isActive>true</isActive>
-  <phoneNumber>+31612345678</phoneNumber>
-  <company>TechCorp</company>
-</PlanningUserCreated>
-```
+- Routing key: `planning.user.created`
+- Root element: `PlanningUserCreated`
 
 ---
 
 ### PUT /api/speakers/:id
+
 Wijzigt een bestaande spreker. Alle velden zijn optioneel.
 
-**Request Body**
+**Request body**
 ```json
 {
   "firstName": "Johannes",
@@ -630,17 +741,17 @@ Wijzigt een bestaande spreker. Alle velden zijn optioneel.
 ```
 
 **Validatie**
-- `firstName`: optioneel, minimaal 1 karakter
-- `lastName`: optioneel, minimaal 1 karakter
-- `email`: optioneel, moet een geldig e-mailadres zijn
-- `phoneNumber`: optioneel
-- `company`: optioneel
+- `firstName` — optioneel, minimaal 1 karakter
+- `lastName` — optioneel, minimaal 1 karakter
+- `email` — optioneel, moet een geldig e-mailadres zijn
+- `phoneNumber` — optioneel
+- `company` — optioneel
 
 **Response 200**
 ```json
 {
   "speakerId": "650e8400-e29b-41d4-a716-446655440000",
-  "crmMasterId": "CRM123",
+  "crmMasterId": "950e8400-e29b-41d4-a716-446655440000",
   "firstName": "Johannes",
   "lastName": "Jansen",
   "email": "jan.new@example.com",
@@ -650,37 +761,36 @@ Wijzigt een bestaande spreker. Alle velden zijn optioneel.
 }
 ```
 
+**Response 400 — validatiefout**
+```json
+{
+  "error": {
+    "fieldErrors": {
+      "email": ["Ongeldig e-mailadres"]
+    }
+  }
+}
+```
+
 **Response 404**
 ```json
 { "error": "Spreker niet gevonden" }
 ```
 
-**Response 400** - Validatiefout
-```json
-{ "error": { "fieldErrors": { "email": ["Ongeldig e-mailadres"] } } }
-```
+**RabbitMQ Events**
+- Exchange: `planning.topic`
+- Routing key: `planning.speaker.updated`
+- Root element: `SpeakerUpdated`
 
-**RabbitMQ Event**
 - Exchange: `user.topic`
-- Routing Key: `planning.user.updated`
-- XML Payload:
-```xml
-<PlanningUserUpdated>
-  <id>650e8400-e29b-41d4-a716-446655440000</id>
-  <email>jan.new@example.com</email>
-  <firstName>Johannes</firstName>
-  <lastName>Jansen</lastName>
-  <role>SPEAKER</role>
-  <isActive>true</isActive>
-  <phoneNumber>+31612345678</phoneNumber>
-  <company>NewCorp</company>
-</PlanningUserUpdated>
-```
+- Routing key: `planning.user.updated`
+- Root element: `PlanningUserUpdated`
 
 ---
 
 ### PATCH /api/speakers/:id/deactivate
-Deactiveert een spreker (zet isActive op false).
+
+Deactiveert een spreker door `isActive` op `false` te zetten.
 
 **Request**
 - Geen body vereist
@@ -691,7 +801,7 @@ Deactiveert een spreker (zet isActive op false).
   "message": "Spreker gedeactiveerd",
   "speaker": {
     "speakerId": "650e8400-e29b-41d4-a716-446655440000",
-    "crmMasterId": "CRM123",
+    "crmMasterId": "950e8400-e29b-41d4-a716-446655440000",
     "firstName": "Jan",
     "lastName": "Jansen",
     "email": "jan@example.com",
@@ -707,23 +817,21 @@ Deactiveert een spreker (zet isActive op false).
 { "error": "Spreker niet gevonden" }
 ```
 
-**RabbitMQ Event**
+**RabbitMQ Events**
+- Exchange: `planning.topic`
+- Routing key: `planning.speaker.deactivated`
+- Root element: `SpeakerDeactivated`
+
 - Exchange: `user.topic`
-- Routing Key: `planning.user.deactivated`
-- XML Payload:
-```xml
-<PlanningUserDeactivated>
-  <id>650e8400-e29b-41d4-a716-446655440000</id>
-  <email>jan@example.com</email>
-  <deactivatedAt>2026-04-22T14:30:00.000Z</deactivatedAt>
-</PlanningUserDeactivated>
-```
+- Routing key: `planning.user.deactivated`
+- Root element: `PlanningUserDeactivated`
 
 ---
 
 ## Users
 
 ### GET /api/users
+
 Geeft alle users terug, gesorteerd op achternaam en voornaam.
 
 **Request**
@@ -747,7 +855,8 @@ Geeft alle users terug, gesorteerd op achternaam en voornaam.
 ---
 
 ### GET /api/users/:id
-Geeft één user terug op basis van het userId.
+
+Geeft één user terug op basis van het `userId`.
 
 **Request**
 - Geen body vereist
@@ -773,9 +882,14 @@ Geeft één user terug op basis van het userId.
 ---
 
 ### POST /api/users
-Maakt een nieuwe user aan. Stuurt automatisch `planning.user.created` event naar RabbitMQ exchange `user.topic`.
 
-**Verplichte velden:** `firstName`, `lastName`, `email`, `role`
+Maakt een nieuwe user aan. Na creatie wordt een event gepubliceerd naar CRM.
+
+**Verplichte velden**
+- `firstName`
+- `lastName`
+- `email`
+- `role`
 
 **Request body**
 ```json
@@ -789,11 +903,11 @@ Maakt een nieuwe user aan. Stuurt automatisch `planning.user.created` event naar
 ```
 
 **Validatieregels**
-- `firstName`: verplicht
-- `lastName`: verplicht
-- `email`: verplicht
-- `role`: verplicht, moet `EVENT_MANAGER` of `VISITOR` zijn
-- `company`: optioneel
+- `firstName` — verplicht
+- `lastName` — verplicht
+- `email` — verplicht, moet uniek zijn
+- `role` — verplicht, bijvoorbeeld `EVENT_MANAGER` of `VISITOR`
+- `company` — optioneel
 
 **Response 201**
 ```json
@@ -808,35 +922,25 @@ Maakt een nieuwe user aan. Stuurt automatisch `planning.user.created` event naar
 }
 ```
 
-**Response 400** — validatiefout
+**Response 400 — validatiefout**
 ```json
 { "error": "Missing required fields" }
 ```
 
-**Response 400** — email duplicate
+**Response 400 — email duplicate**
 ```json
 { "error": "Email already exists" }
 ```
 
 **RabbitMQ Event**
 - Exchange: `user.topic`
-- Routing Key: `planning.user.created`
-- XML Payload:
-```xml
-<PlanningUserCreated>
-  <id>750e8400-e29b-41d4-a716-446655440000</id>
-  <email>sara@example.com</email>
-  <firstName>Sara</firstName>
-  <lastName>Peeters</lastName>
-  <role>EVENT_MANAGER</role>
-  <isActive>true</isActive>
-  <company>EventCorp</company>
-</PlanningUserCreated>
-```
+- Routing key: `planning.user.created`
+- Root element: `PlanningUserCreated`
 
 ---
 
 ### PUT /api/users/:id
+
 Wijzigt een bestaande user. Alle velden zijn optioneel.
 
 **Request body**
@@ -849,11 +953,11 @@ Wijzigt een bestaande user. Alle velden zijn optioneel.
 ```
 
 **Validatieregels**
-- `firstName`: optioneel, minimaal 1 karakter
-- `lastName`: optioneel, minimaal 1 karakter
-- `email`: optioneel, moet een geldig e-mailadres zijn
-- `role`: optioneel, moet `EVENT_MANAGER` of `VISITOR` zijn
-- `company`: optioneel
+- `firstName` — optioneel, minimaal 1 karakter
+- `lastName` — optioneel, minimaal 1 karakter
+- `email` — optioneel, moet een geldig e-mailadres zijn
+- `role` — optioneel, bijvoorbeeld `EVENT_MANAGER` of `VISITOR`
+- `company` — optioneel
 
 **Response 200**
 ```json
@@ -868,35 +972,32 @@ Wijzigt een bestaande user. Alle velden zijn optioneel.
 }
 ```
 
+**Response 400 — validatiefout**
+```json
+{
+  "error": {
+    "fieldErrors": {
+      "email": ["Ongeldig e-mailadres"]
+    }
+  }
+}
+```
+
 **Response 404**
 ```json
 { "error": "User niet gevonden" }
 ```
 
-**Response 400** — validatiefout
-```json
-{ "error": { "fieldErrors": { "email": ["Ongeldig e-mailadres"] } } }
-```
-
 **RabbitMQ Event**
 - Exchange: `user.topic`
-- Routing Key: `planning.user.updated`
-- XML Payload:
-```xml
-<PlanningUserUpdated>
-  <id>750e8400-e29b-41d4-a716-446655440000</id>
-  <email>sara.new@example.com</email>
-  <firstName>Sara</firstName>
-  <lastName>Peeters</lastName>
-  <role>VISITOR</role>
-  <company>EventCorp</company>
-</PlanningUserUpdated>
-```
+- Routing key: `planning.user.updated`
+- Root element: `PlanningUserUpdated`
 
 ---
 
 ### PATCH /api/users/:id/deactivate
-Deactiveert een user (zet isActive op false).
+
+Deactiveert een user door `isActive` op `false` te zetten.
 
 **Request**
 - Geen body vereist
@@ -924,21 +1025,15 @@ Deactiveert een user (zet isActive op false).
 
 **RabbitMQ Event**
 - Exchange: `user.topic`
-- Routing Key: `planning.user.deactivated`
-- XML Payload:
-```xml
-<PlanningUserDeactivated>
-  <id>750e8400-e29b-41d4-a716-446655440000</id>
-  <email>sara@example.com</email>
-  <deactivatedAt>2026-04-22T14:30:00.000Z</deactivatedAt>
-</PlanningUserDeactivated>
-```
+- Routing key: `planning.user.deactivated`
+- Root element: `PlanningUserDeactivated`
 
 ---
 
 ## Session Speakers
 
 ### GET /api/sessions/:id/speakers
+
 Geeft alle sprekers terug die gelinkt zijn aan een sessie.
 
 **Request**
@@ -948,9 +1043,9 @@ Geeft alle sprekers terug die gelinkt zijn aan een sessie.
 ```json
 [
   {
-    "sessionSpeakerId": "uuid",
-    "sessionId": "uuid",
-    "speakerId": "uuid",
+    "sessionSpeakerId": "d50e8400-e29b-41d4-a716-446655440000",
+    "sessionId": "4e61b896-8ad9-4235-bbba-8ae31d91ba56",
+    "speakerId": "650e8400-e29b-41d4-a716-446655440000",
     "role": null,
     "confirmed": false,
     "firstName": "Jan",
@@ -964,35 +1059,43 @@ Geeft alle sprekers terug die gelinkt zijn aan een sessie.
 ---
 
 ### POST /api/sessions/:id/speakers
+
 Linkt een spreker aan een sessie.
 
-**Verplichte velden:** `speakerId`
+**Verplichte velden**
+- `speakerId`
 
 **Request body**
 ```json
 {
-  "speakerId": "uuid-van-spreker",
-  "role": "hoofdspreker (optioneel)"
+  "speakerId": "650e8400-e29b-41d4-a716-446655440000",
+  "role": "hoofdspreker"
 }
 ```
 
 **Response 201**
 ```json
 {
-  "sessionSpeakerId": "uuid",
-  "sessionId": "uuid",
-  "speakerId": "uuid",
-  "role": null,
+  "sessionSpeakerId": "d50e8400-e29b-41d4-a716-446655440000",
+  "sessionId": "4e61b896-8ad9-4235-bbba-8ae31d91ba56",
+  "speakerId": "650e8400-e29b-41d4-a716-446655440000",
+  "role": "hoofdspreker",
   "confirmed": false
 }
 ```
 
-**Response 400** - Validatiefout
+**Response 400 — validatiefout**
 ```json
-{ "error": { "fieldErrors": { "speakerId": ["speakerId moet een geldig UUID zijn"] } } }
+{
+  "error": {
+    "fieldErrors": {
+      "speakerId": ["speakerId moet een geldig UUID zijn"]
+    }
+  }
+}
 ```
 
-**Response 409** - Spreker al gelinkt
+**Response 409 — spreker al gelinkt**
 ```json
 { "error": "Spreker is al gelinkt aan deze sessie" }
 ```
@@ -1000,6 +1103,7 @@ Linkt een spreker aan een sessie.
 ---
 
 ### DELETE /api/sessions/:id/speakers/:speakerId
+
 Verwijdert de koppeling tussen een spreker en een sessie.
 
 **Request**
@@ -1013,4 +1117,23 @@ Verwijdert de koppeling tussen een spreker en een sessie.
 **Response 404**
 ```json
 { "error": "Koppeling niet gevonden" }
+```
+
+---
+
+## Health check
+
+### GET /health
+
+Controleert of de Planning Service actief is.
+
+**Request**
+- Geen body vereist
+
+**Response 200**
+```json
+{
+  "status": "ok",
+  "service": "planning"
+}
 ```
