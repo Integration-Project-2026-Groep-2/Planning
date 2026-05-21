@@ -6,6 +6,7 @@ describe("XML XSD validation", () => {
 <SessionCreated>
 <sessionId>123e4567-e89b-12d3-a456-426614174000</sessionId>
 <title>Test Session</title>
+<description>Introductie tot TypeScript</description>
 <date>2026-05-20</date>
 <startTime>10:00:00</startTime>
 <endTime>12:00:00</endTime>
