@@ -34,6 +34,36 @@ const checkLocationConflict = async (
     return result.rows.length > 0;
 };
 
+const getSessionSpeakerCrmId = async (sessionId: string): Promise<string | undefined> => {
+    try {
+        const result = await query(
+            `SELECT COALESCE(u."crmMasterId", s."crmMasterId") as "crmMasterId"
+             FROM "SessionSpeaker" ss
+             JOIN "Speaker" s ON ss."speakerId" = s."speakerId"
+             LEFT JOIN "User" u ON (s."crmMasterId" = u."crmMasterId" OR s."email" = u."email")
+             WHERE ss."sessionId" = $1
+             LIMIT 1`,
+            [sessionId],
+        );
+        return result.rows[0]?.crmMasterId || undefined;
+    } catch (error) {
+        return undefined;
+    }
+};
+
+const getSessionParticipantCrmIds = async (sessionId: string): Promise<string[]> => {
+    try {
+        const result = await query(
+            `SELECT "userId" FROM "Registration"
+             WHERE "sessionId" = $1 AND "isActive" = true`,
+            [sessionId],
+        );
+        return result.rows.map((row) => row.userId);
+    } catch (error) {
+        return [];
+    }
+};
+
 const formatDate = (date: Date | string): string => {
     return date instanceof Date
         ? date.toISOString().split("T")[0]
@@ -232,6 +262,9 @@ export const updateSession = async (
             newLocation = location?.roomName || "Onbekend";
         }
 
+        const speakerId = await getSessionSpeakerCrmId(sessionId);
+        const participantIds = await getSessionParticipantCrmIds(sessionId);
+
         // ── SessionUpdated: datum + tijden meesturen voor ICS ──
         await sendSessionUpdated({
             sessionId: updatedSession.sessionId,
@@ -247,6 +280,8 @@ export const updateSession = async (
             newLocationId: updatedSession.locationId,
             newCapacity: updatedSession.capacity,
             newStatus: updatedSession.status,
+            speakerId,
+            participantIds,
             description: updatedSession.description ?? undefined,
             timestamp: new Date().toISOString(),
         });
@@ -288,6 +323,9 @@ export const cancelSession = async (sessionId: string) => {
             locationName = location?.roomName || "Onbekend";
         }
 
+        const speakerId = await getSessionSpeakerCrmId(sessionId);
+        const participantIds = await getSessionParticipantCrmIds(sessionId);
+
         // ── SessionCancelled: datum + tijden meesturen
         await sendSessionCancelled({
             sessionId: cancelledSession.sessionId,
@@ -299,6 +337,7 @@ export const cancelSession = async (sessionId: string) => {
             description: cancelledSession.description ?? undefined,
             status: "cancelled",
             reason: "Session cancelled",
+            participantIds,
         });
 
         await sendSessionUpdated({
@@ -315,6 +354,8 @@ export const cancelSession = async (sessionId: string) => {
             newLocationId: cancelledSession.locationId,
             newCapacity: cancelledSession.capacity,
             newStatus: "geannuleerd",
+            speakerId,
+            participantIds,
             description: cancelledSession.description ?? undefined,
             timestamp: new Date().toISOString(),
         });
@@ -380,6 +421,9 @@ export const rescheduleSession = async (
         sessionId,
     });
 
+        const speakerId = await getSessionSpeakerCrmId(sessionId);
+        const participantIds = await getSessionParticipantCrmIds(sessionId);
+
     await sendSessionRescheduled({
         sessionId,
         sessionName: current.title,
@@ -392,6 +436,7 @@ export const rescheduleSession = async (
         newLocation,
         reason: data.reason,
         icsData,
+        participantIds,
     });
 
     await sendSessionUpdated({
@@ -408,6 +453,8 @@ export const rescheduleSession = async (
         newLocationId: current.locationId,
         newCapacity: current.capacity,
         newStatus: current.status,
+        speakerId,
+        participantIds,
         description: current.description ?? undefined,
         timestamp: new Date().toISOString(),
     });

@@ -19,6 +19,7 @@ type SessionUpdatedPayload = {
     newLocationId?: string;
     newCapacity?: number;
     newStatus?: string;
+    speakerId?: string;
     description?: string;
     participantIds?: string[];
     timestamp?: string;
@@ -56,6 +57,7 @@ export const sendSessionUpdated = async (payload: SessionUpdatedPayload) => {
             newLocationId: payload.newLocationId,
             newCapacity: payload.newCapacity,
             newStatus: payload.newStatus,
+            speakerId: payload.speakerId,
             participantIds: payload.participantIds?.length
                 ? { participantId: payload.participantIds }
                 : undefined,
