@@ -10,5 +10,6 @@
     "sourceMap": true,
     "moduleResolution": "node16",
     "types": ["node", "jest"]
-  }
+  },
+  "exclude": ["node_modules", "dist", "planning-mcp"]
 }
