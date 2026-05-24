@@ -7,14 +7,16 @@ Onderdeel van het Integratieproject 2026 — Groep 2.
 
 Installeer deze software voor je start:
 
-- [Node.js](https://nodejs.org/) — versie 24.14.1 (LTS)
+- [Node.js](https://nodejs.org/) — versie 20 (LTS)
 - [PostgreSQL](https://www.postgresql.org/download/windows/) — versie 17.9
-- [RabbitMQ](https://www.rabbitmq.com/docs/install-windows) — installeer eerst Erlang via erlang.org/downloads
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) — voor RabbitMQ
 - [Git](https://git-scm.com/)
 
 > **PostgreSQL installatie:** tijdens de installatie gebruik je een wachtwoord — zie document **Credentials & Environment** op ClickUp. Laat de poort op `5432` staan en vink StackBuilder uit op het einde.
 
 > **PostgreSQL PATH (Windows):** na installatie voeg je `C:\Program Files\PostgreSQL\17\bin` toe aan je system environment variables.
+
+> **RabbitMQ alternatief zonder Docker:** je kan RabbitMQ ook rechtstreeks installeren via [rabbitmq.com](https://www.rabbitmq.com/docs/install-windows) — installeer eerst Erlang via erlang.org/downloads.
 
 ## Installatie
 
@@ -42,7 +44,23 @@ CREATE DATABASE planning_db;
 
 > Voor het wachtwoord bij `psql -U postgres` — zie document **Credentials & Environment** op ClickUp.
 
-### 5. Server starten
+### 5. Database tabellen aanmaken
+```bash
+psql -U postgres -d planning_db -f src/utils/db/schema.sql
+```
+
+### 6. RabbitMQ starten via Docker
+```bash
+# Eerste keer — container aanmaken
+docker run -d --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:management
+
+# Daarna — container starten
+docker start rabbitmq
+```
+
+> RabbitMQ Management dashboard: `http://localhost:15672` (guest/guest)
+
+### 7. Server starten
 ```bash
 npm run dev
 ```
@@ -55,6 +73,16 @@ Ga naar `http://localhost:3000/health` — je zou dit moeten zien:
 ```json
 {"status":"ok","service":"planning"}
 ```
+
+## Nuttige Docker commando's
+
+| Commando | Beschrijving |
+|----------|-------------|
+| `docker start rabbitmq` | RabbitMQ starten |
+| `docker stop rabbitmq` | RabbitMQ stoppen |
+| `docker restart rabbitmq` | RabbitMQ herstarten |
+| `docker ps` | Alle draaiende containers zien |
+| `docker logs rabbitmq` | Logs van RabbitMQ bekijken |
 
 ## Poorten
 
@@ -72,6 +100,7 @@ Ga naar `http://localhost:3000/health` — je zou dit moeten zien:
 | `npm run dev` | Start lokaal met automatisch herstarten |
 | `npm run build` | Compileert TypeScript |
 | `npm start` | Start gecompileerde versie |
+| `npm test` | Voert alle tests uit |
 
 ## Mapstructuur
 ```
