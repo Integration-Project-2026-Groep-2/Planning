@@ -42,11 +42,11 @@ jobs:
             SHA_SHORT="${SHA_FULL::7}"
             echo "RELEASE_TAG=${RELEASE_TAG}"            >> $GITHUB_ENV
             echo "IMAGE_TAG=${IMAGE_TAG}"                >> $GITHUB_ENV
-            echo "SOURCE_TAG=sha-${SHA_SHORT}"           >> $GITHUB_ENV
+            echo "SOURCE_TAG=latest"                     >> $GITHUB_ENV
             echo "SHA=${SHA_SHORT}"                      >> $GITHUB_ENV
             echo "release_tag=${RELEASE_TAG}"            >> $GITHUB_OUTPUT
             echo "image_tag=${IMAGE_TAG}"                >> $GITHUB_OUTPUT
-            echo "source_tag=sha-${SHA_SHORT}"           >> $GITHUB_OUTPUT
+            echo "source_tag=latest"                     >> $GITHUB_OUTPUT
             echo "sha=${SHA_SHORT}"                      >> $GITHUB_OUTPUT
           else
             if [ -n "${{ inputs.sha }}" ]; then
