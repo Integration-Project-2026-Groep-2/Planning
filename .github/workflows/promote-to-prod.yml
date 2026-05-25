@@ -52,9 +52,9 @@ jobs:
             if [ -n "${{ inputs.sha }}" ]; then
               SHA_INPUT="${{ inputs.sha }}"
               SHA_SHORT="${SHA_INPUT::7}"
-              echo "SOURCE_TAG=sha-${SHA_SHORT}"     >> $GITHUB_ENV
+              echo "SOURCE_TAG=latest"               >> $GITHUB_ENV
               echo "SHA=${SHA_SHORT}"                >> $GITHUB_ENV
-              echo "source_tag=sha-${SHA_SHORT}"     >> $GITHUB_OUTPUT
+              echo "source_tag=latest"               >> $GITHUB_OUTPUT
               echo "sha=${SHA_SHORT}"                >> $GITHUB_OUTPUT
             else
               if ! docker pull ${{ env.IMAGE }}:latest-dev; then
@@ -68,10 +68,10 @@ jobs:
                 exit 1
               fi
               SHA_SHORT="${SHA_FULL::7}"
-              echo "SOURCE_TAG=latest-dev"                >> $GITHUB_ENV
-              echo "SHA=${SHA_SHORT}"                      >> $GITHUB_ENV
-              echo "source_tag=latest-dev"                >> $GITHUB_OUTPUT
-              echo "sha=${SHA_SHORT}"                      >> $GITHUB_OUTPUT
+              echo "SOURCE_TAG=latest"                    >> $GITHUB_ENV
+              echo "SHA=${SHA_SHORT}"                     >> $GITHUB_ENV
+              echo "source_tag=latest"                    >> $GITHUB_OUTPUT
+              echo "sha=${SHA_SHORT}"                     >> $GITHUB_OUTPUT
             fi
             if [ -n "${{ inputs.version }}" ]; then
               VERSION="${{ inputs.version }}"
