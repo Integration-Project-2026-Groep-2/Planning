@@ -474,6 +474,7 @@ Root element: UserConfirmed
 
 Gedrag:
 - role = SPEAKER → insert in Speaker tabel
+- role = EVENT_MANAGER → crmMasterId opslaan bij User
 - anders → genegeerd
 - idempotency check
 - bij fout → DLQ
